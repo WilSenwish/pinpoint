@@ -1,11 +1,11 @@
 /*
- * Copyright 2014 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,13 @@ package com.navercorp.pinpoint.web.mapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import com.navercorp.pinpoint.common.buffer.Buffer;
 import com.navercorp.pinpoint.common.buffer.OffsetFixedBuffer;
 import com.navercorp.pinpoint.common.hbase.RowMapper;
 
-import com.navercorp.pinpoint.common.util.TransactionId;
+import com.navercorp.pinpoint.common.profiler.util.TransactionId;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.slf4j.Logger;
@@ -64,9 +65,8 @@ public class TransactionIdMapper implements RowMapper<List<TransactionId>> {
     }
 
     public static TransactionId parseVarTransactionId(byte[] bytes, int offset, int length) {
-        if (bytes == null) {
-            throw new NullPointerException("bytes must not be null");
-        }
+        Objects.requireNonNull(bytes, "bytes");
+
         final Buffer buffer = new OffsetFixedBuffer(bytes, offset, length);
         
         // skip elapsed time (not used) hbase column prefix - only used for filtering.

@@ -19,7 +19,7 @@ import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPlugin;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPluginGlobalContext;
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 import com.navercorp.pinpoint.common.util.CodeSourceUtils;
 import com.navercorp.pinpoint.profiler.instrument.classloading.ClassInjector;
 import com.navercorp.pinpoint.profiler.instrument.classloading.ClassInjectorFactory;
@@ -52,11 +52,11 @@ public class DefaultProfilerPluginContextLoader implements ProfilerPluginContext
     public DefaultProfilerPluginContextLoader(ProfilerConfig profilerConfig, ServiceType configuredApplicationType,
                                               ClassInjectorFactory classInjectorFactory, PluginSetup pluginSetup,
                                               List<PluginJar> pluginJars) {
-        this.profilerConfig = Assert.requireNonNull(profilerConfig, "profilerConfig must not be null");
-        this.configuredApplicationType = Assert.requireNonNull(configuredApplicationType, "configuredApplicationType must not be null");
-        this.classInjectorFactory = Assert.requireNonNull(classInjectorFactory, "classInjectorFactory must not be null");
-        this.pluginSetup = Assert.requireNonNull(pluginSetup, "pluginSetup must not be null");
-        this.pluginJars = Assert.requireNonNull(pluginJars, "pluginJars must not be null");
+        this.profilerConfig = Objects.requireNonNull(profilerConfig, "profilerConfig");
+        this.configuredApplicationType = Objects.requireNonNull(configuredApplicationType, "configuredApplicationType");
+        this.classInjectorFactory = Objects.requireNonNull(classInjectorFactory, "classInjectorFactory");
+        this.pluginSetup = Objects.requireNonNull(pluginSetup, "pluginSetup");
+        this.pluginJars = Objects.requireNonNull(pluginJars, "pluginJars");
     }
 
     @Override
@@ -170,7 +170,7 @@ public class DefaultProfilerPluginContextLoader implements ProfilerPluginContext
             private final List<ProfilerPlugin> profilerPlugins;
 
             private JarPluginComponent(PluginJar pluginJar) {
-                this.pluginJar = Assert.requireNonNull(pluginJar, "pluginJar must not be null");
+                this.pluginJar = Objects.requireNonNull(pluginJar, "pluginJar");
                 this.profilerPlugins = new ArrayList<ProfilerPlugin>();
             }
 

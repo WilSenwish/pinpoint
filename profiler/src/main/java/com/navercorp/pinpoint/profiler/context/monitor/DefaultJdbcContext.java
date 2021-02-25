@@ -21,6 +21,8 @@ import com.navercorp.pinpoint.bootstrap.context.DatabaseInfo;
 import com.navercorp.pinpoint.bootstrap.plugin.jdbc.JdbcContext;
 import com.navercorp.pinpoint.common.trace.ServiceType;
 
+import java.util.Objects;
+
 
 /**
  * @author Taejin Koo
@@ -31,10 +33,7 @@ public class DefaultJdbcContext implements JdbcContext {
 
     @Inject
     public DefaultJdbcContext(JdbcUrlParsingService jdbcUrlParsingService) {
-        if (jdbcUrlParsingService == null) {
-            throw new NullPointerException("jdbcUrlParsingService must not be null");
-        }
-        this.jdbcUrlParsingService = jdbcUrlParsingService;
+        this.jdbcUrlParsingService = Objects.requireNonNull(jdbcUrlParsingService, "jdbcUrlParsingService");
     }
 
 

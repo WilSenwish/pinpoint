@@ -45,7 +45,6 @@ import com.navercorp.pinpoint.web.vo.AgentInfo;
 
 import org.apache.thrift.TBase;
 import org.apache.thrift.TException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -54,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -68,21 +68,24 @@ public class AgentServiceImpl implements AgentService {
 
     private long timeDiffMs;
 
-    @Autowired
-    private AgentInfoService agentInfoService;
+    private final AgentInfoService agentInfoService;
 
-    @Autowired
-    private ClusterManager clusterManager;
+    private final ClusterManager clusterManager;
 
-    @Autowired
-    @Qualifier("commandHeaderTBaseSerializerFactory")
-    private SerializerFactory<HeaderTBaseSerializer> commandSerializerFactory;
+    private final SerializerFactory<HeaderTBaseSerializer> commandSerializerFactory;
 
-    @Autowired
-    @Qualifier("commandHeaderTBaseDeserializerFactory")
-    private DeserializerFactory<HeaderTBaseDeserializer> commandDeserializerFactory;
+    private final DeserializerFactory<HeaderTBaseDeserializer> commandDeserializerFactory;
 
-    @Value("#{pinpointWebProps['web.activethread.activeAgent.duration.days'] ?: 7}")
+    public AgentServiceImpl(AgentInfoService agentInfoService, ClusterManager clusterManager,
+                            @Qualifier("commandHeaderTBaseSerializerFactory") SerializerFactory<HeaderTBaseSerializer> commandSerializerFactory,
+                            @Qualifier("commandHeaderTBaseDeserializerFactory") DeserializerFactory<HeaderTBaseDeserializer> commandDeserializerFactory) {
+        this.agentInfoService = Objects.requireNonNull(agentInfoService, "agentInfoService");
+        this.clusterManager = Objects.requireNonNull(clusterManager, "clusterManager");
+        this.commandSerializerFactory = Objects.requireNonNull(commandSerializerFactory, "commandSerializerFactory");
+        this.commandDeserializerFactory = Objects.requireNonNull(commandDeserializerFactory, "commandDeserializerFactory");
+    }
+
+    @Value("${web.activethread.activeAgent.duration.days:7}")
     private void setTimeDiffMs(int durationDays) {
         this.timeDiffMs = TimeUnit.MILLISECONDS.convert(durationDays, TimeUnit.DAYS);
     }

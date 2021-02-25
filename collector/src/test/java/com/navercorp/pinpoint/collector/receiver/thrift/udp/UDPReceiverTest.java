@@ -21,7 +21,7 @@ import com.navercorp.pinpoint.collector.util.DatagramPacketFactory;
 import com.navercorp.pinpoint.collector.util.DefaultObjectPool;
 import com.navercorp.pinpoint.collector.util.ObjectPool;
 import com.navercorp.pinpoint.collector.util.ObjectPoolFactory;
-import org.apache.hadoop.hbase.shaded.org.apache.commons.io.IOUtils;
+import com.navercorp.pinpoint.common.util.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.SocketUtils;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -73,7 +74,8 @@ public class UDPReceiverTest {
         try {
             ObjectPoolFactory<DatagramPacket> packetFactory = new DatagramPacketFactory();
             ObjectPool<DatagramPacket> pool = new DefaultObjectPool<>(packetFactory, 10);
-            receiver = new UDPReceiver("test", packetHandlerFactory, executor, 8, bindAddress, pool);
+            ReusePortSocketOptionApplier socketOptionApplier = ReusePortSocketOptionApplier.create(false, 1);
+            receiver = new UDPReceiver("test", packetHandlerFactory, executor, 8, bindAddress, socketOptionApplier, pool);
         } catch (Exception e) {
             logger.debug(e.getMessage(), e);
             Assert.fail(e.getMessage());
@@ -135,7 +137,8 @@ public class UDPReceiverTest {
             InetSocketAddress bindAddress = new InetSocketAddress(ADDRESS, PORT);
             ObjectPoolFactory<DatagramPacket> packetFactory = new DatagramPacketFactory();
             ObjectPool<DatagramPacket> pool = new DefaultObjectPool<>(packetFactory, 10);
-            receiver = new UDPReceiver("test", packetHandlerFactory, mockExecutor, 8, bindAddress, pool) {
+            ReusePortSocketOptionApplier socketOptionApplier = ReusePortSocketOptionApplier.create(false, 1);
+            receiver = new UDPReceiver("test", packetHandlerFactory, mockExecutor, 8, bindAddress, socketOptionApplier, pool) {
                 @Override
                 boolean validatePacket(DatagramPacket packet) {
                     interceptValidatePacket(packet);
@@ -160,9 +163,7 @@ public class UDPReceiverTest {
             if (receiver != null) {
                 receiver.shutdown();
             }
-            IOUtils.closeQuietly(datagramSocket);
-
-
+            IOUtils.closeQuietly((Closeable) datagramSocket);
         }
     }
 

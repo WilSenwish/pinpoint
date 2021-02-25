@@ -22,6 +22,7 @@ import com.navercorp.pinpoint.common.server.bo.SpanBo;
 
 import com.navercorp.pinpoint.common.server.bo.thrift.SpanFactory;
 import com.navercorp.pinpoint.io.request.ServerRequest;
+import org.apache.thrift.TBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ import java.util.Objects;
  * @author netspider
  */
 @Service
-public class ThriftSpanHandler implements SimpleHandler {
+public class ThriftSpanHandler implements SimpleHandler<TBase<?, ?>> {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -45,13 +46,13 @@ public class ThriftSpanHandler implements SimpleHandler {
     private final SpanFactory spanFactory;
 
     public ThriftSpanHandler(TraceService traceService, SpanFactory spanFactory) {
-        this.traceService = Objects.requireNonNull(traceService, "traceService must not be null");
-        this.spanFactory = Objects.requireNonNull(spanFactory, "spanFactory must not be null");
+        this.traceService = Objects.requireNonNull(traceService, "traceService");
+        this.spanFactory = Objects.requireNonNull(spanFactory, "spanFactory");
     }
 
     @Override
-    public void handleSimple(ServerRequest serverRequest) {
-        final Object data = serverRequest.getData();
+    public void handleSimple(ServerRequest<TBase<?, ?>> serverRequest) {
+        final TBase<?, ?> data = serverRequest.getData();
         if (logger.isDebugEnabled()) {
             logger.debug("Handle simple data={}", data);
         }
@@ -68,7 +69,7 @@ public class ThriftSpanHandler implements SimpleHandler {
             final SpanBo spanBo = spanFactory.buildSpanBo(tSpan);
             traceService.insertSpan(spanBo);
         } catch (Exception e) {
-            logger.warn("Span handle error. Caused:{}. Span:{}", e.getMessage(), tSpan, e);
+            logger.warn("Failed to handle Span={}, Caused:{}", tSpan, e.getMessage(), e);
         }
     }
 }

@@ -130,27 +130,26 @@ ex) pinpoint.config when using log4j
 # log4j
 ###########################################################
 profiler.log4j.logging.transactioninfo=true
+```
 
+ex) pinpoint.config when using log4j2
+```
 ###########################################################
-# logback
+# log4j2 
 ###########################################################
-profiler.logback.logging.transactioninfo=false
+profiler.log4j2.logging.transactioninfo=true
+
 ```
 
 ex) pinpoint.config when using logback
 ```
-###########################################################
-# log4j
-###########################################################
-profiler.log4j.logging.transactioninfo=false
-
 ###########################################################
 # logback
 ###########################################################
 profiler.logback.logging.transactioninfo=true
 ```
 
-**2-2 log4j, logback configuration**
+**2-2 log4j, log4j2, logback configuration**
 
 Change the log message format to print the transactionId, and spanId saved in MDC.
 
@@ -169,6 +168,23 @@ After
           <param name = "ConversionPattern" value= "%d{yyyy-MM-dd HH:mm:ss} [%-5p](%-30c{1}) [TxId : %X{PtxId} , SpanId : %X{PspanId}] %m%n" />
         </layout >
 </appender >
+```
+
+ex) log4j2 - log4j2.xml
+```xml
+Before
+<appender>
+     <console name="STDOUT" target="SYSTEM_OUT">
+          <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-5p](%-30c{1}) %m%n""/>
+     </console>
+<appender>
+
+After
+<appender>
+     <console name="STDOUT" target="SYSTEM_OUT">
+          <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-5p](%-30c{1}) [TxId : %X{PtxId} , SpanId : %X{PspanId}] %m%n""/>
+     </console>
+<appender>
 ```
 
 ex) logback : logback.xml
@@ -235,7 +251,7 @@ log.button.name= log
 **step 3**
 Pinpoint 1.5.0 or later, we improve button to decided enable/disable depending on whether or not being logged.
 You should implement interceptor for using logging appender to add logic whether or not being logged. you also should create plugin for logging appender internally.
-Please refer to Pinpoint Profiler Plugin Sample([Link](https://github.com/naver/pinpoint-plugin-sample)).
+Please refer to Pinpoint Profiler Plugin Sample([Link](https://github.com/pinpoint-apm/pinpoint-plugin-sample)).
 Location added logic of interceptor is method to log for data of LoggingEvent in appender class. you should review your appender class and find method.
 This is interceptor example.
 
@@ -401,27 +417,26 @@ ex) Pinpoint.config  - log4j 를 사용할 경우
 # log4j
 ###########################################################
 profiler.log4j.logging.transactioninfo=true
+```
 
+ex) Pinpoint.config  - log4j2 를 사용할 경우
+```
 ###########################################################
-# logback
+# log4j2 
 ###########################################################
-profiler.logback.logging.transactioninfo=false
+profiler.log4j2.logging.transactioninfo=true
+
 ```
 
 ex) Pinpoint.config  - logback 를 사용할 경우
 ```
-###########################################################
-# log4j
-###########################################################
-profiler.log4j.logging.transactioninfo=false
-
 ###########################################################
 # logback
 ###########################################################
 profiler.logback.logging.transactioninfo=true
 ```
 
-**2-2 log4j, logback 설정 파일 설정**
+**2-2 log4j, log4j2, logback 설정 파일 설정**
 
 logging 설정 파일의 log message pattern 설정에 Pinpoint에서 MDC에 저장한 transactionId, spanId값이 출력될수 있도록 설정을 추가하자.
 
@@ -440,6 +455,23 @@ ex) log4j - log4j.xml
           <param name = "ConversionPattern" value= "%d{yyyy-MM-dd HH:mm:ss} [%-5p](%-30c{1}) [TxId : %X{PtxId} , SpanId : %X{PspanId}] %m%n" />
         </layout >
 </appender >
+```
+
+ex) log4j2 - log4j2.xml
+```xml
+변경 전
+<appender>
+     <console name="STDOUT" target="SYSTEM_OUT">
+          <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-5p](%-30c{1}) %m%n""/>
+     </console>
+<appender>
+
+변경 후
+<appender>
+     <console name="STDOUT" target="SYSTEM_OUT">
+          <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%-5p](%-30c{1}) [TxId : %X{PtxId} , SpanId : %X{PspanId}] %m%n""/>
+     </console>
+<appender>
 ```
 
 ex) logback - logback.xml
@@ -508,7 +540,7 @@ log.button.name=log
 **step 3**
 pinpoint 1.5 이후 버전부터 log 기록 여부에 따라 log 버튼의 활성화가 결정되도록 개선 됐기 때문에
 당신이 사용하는 logging appender의 로깅 메소드에 logging 여부를 저장하는 interceptor를 추가하는 플러그인을 개발해야 한다.
-플러그인 개발 방법은 다음 링크를 참고하면 된다([Link](https://github.com/naver/pinpoint-plugin-sample)). interceptor 로직이 추가돼야 하는 위치는 appender class 내에 LoggingEvent 객체의 데이터를 이용하여 로깅을 하는 메소드다.
+플러그인 개발 방법은 다음 링크를 참고하면 된다([Link](https://github.com/pinpoint-apm/pinpoint-plugin-sample)). interceptor 로직이 추가돼야 하는 위치는 appender class 내에 LoggingEvent 객체의 데이터를 이용하여 로깅을 하는 메소드다.
 아래는 interceptor 예제이다.
 ```
 public class AppenderInterceptor implements AroundInterceptor0 {

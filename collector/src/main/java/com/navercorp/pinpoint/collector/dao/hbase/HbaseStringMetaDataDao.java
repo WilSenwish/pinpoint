@@ -17,6 +17,7 @@
 package com.navercorp.pinpoint.collector.dao.hbase;
 
 import com.navercorp.pinpoint.collector.dao.StringMetaDataDao;
+import com.navercorp.pinpoint.collector.util.CollectorUtils;
 import com.navercorp.pinpoint.common.hbase.HbaseColumnFamily;
 import com.navercorp.pinpoint.common.hbase.HbaseOperations2;
 import com.navercorp.pinpoint.common.hbase.TableDescriptor;
@@ -28,9 +29,10 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
+
+import java.util.Objects;
 
 /**
  * @author emeroad
@@ -41,24 +43,29 @@ public class HbaseStringMetaDataDao implements StringMetaDataDao {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private HbaseOperations2 hbaseTemplate;
+    private final HbaseOperations2 hbaseTemplate;
 
-    @Autowired
-    @Qualifier("metadataRowKeyDistributor")
-    private RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix;
+    private final TableDescriptor<HbaseColumnFamily.StringMetadataStr> descriptor;
 
-    @Autowired
-    private TableDescriptor<HbaseColumnFamily.StringMetadataStr> descriptor;
+    private final RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix;
+
+    public HbaseStringMetaDataDao(HbaseOperations2 hbaseTemplate,
+                                  TableDescriptor<HbaseColumnFamily.StringMetadataStr> descriptor,
+                                  @Qualifier("metadataRowKeyDistributor") RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix) {
+        this.hbaseTemplate = Objects.requireNonNull(hbaseTemplate, "hbaseTemplate");
+        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+        this.rowKeyDistributorByHashPrefix = Objects.requireNonNull(rowKeyDistributorByHashPrefix, "rowKeyDistributorByHashPrefix");
+    }
 
     @Override
     public void insert(StringMetaDataBo stringMetaData) {
-        if (stringMetaData == null) {
-            throw new NullPointerException("stringMetaData must not be null");
-        }
+        Objects.requireNonNull(stringMetaData, "stringMetaData");
         if (logger.isDebugEnabled()) {
             logger.debug("insert:{}", stringMetaData);
         }
+
+        // Assert agentId
+        CollectorUtils.checkAgentId(stringMetaData.getAgentId());
 
         final byte[] rowKey = getDistributedKey(stringMetaData.toRowKey());
         final Put put = new Put(rowKey);

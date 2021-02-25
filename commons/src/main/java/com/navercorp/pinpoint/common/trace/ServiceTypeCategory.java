@@ -33,7 +33,7 @@ public enum ServiceTypeCategory {
     
     private final short minCode;
     private final short maxCode;
-    private HistogramSchema histogramSchema;
+    private final HistogramSchema histogramSchema;
 
     private static final Set<ServiceTypeCategory> SERVICE_TYPE_CATEGORIES = EnumSet.allOf(ServiceTypeCategory.class);
 
@@ -45,7 +45,7 @@ public enum ServiceTypeCategory {
         this.minCode = minCode;
         this.maxCode = maxCode;
         if (histogramSchema == null) {
-            throw new NullPointerException("histogramSchema must not be null");
+            throw new NullPointerException("histogramSchema");
         }
         this.histogramSchema = histogramSchema;
     }

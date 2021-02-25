@@ -17,6 +17,7 @@
 package com.navercorp.pinpoint.web.vo.stat;
 
 import com.navercorp.pinpoint.web.vo.chart.Point;
+import com.navercorp.pinpoint.web.vo.chart.UncollectedPointCreatorFactory;
 import com.navercorp.pinpoint.web.vo.stat.chart.agent.AgentStatPoint;
 
 import java.util.Objects;
@@ -27,17 +28,12 @@ import java.util.Objects;
 public class SampledFileDescriptor implements SampledAgentStatDataPoint {
 
     public static final Long UNCOLLECTED_VALUE = -1L;
-    public static final Point.UncollectedPointCreator<AgentStatPoint<Long>> UNCOLLECTED_POINT_CREATOR = new Point.UncollectedPointCreator<AgentStatPoint<Long>>() {
-        @Override
-        public AgentStatPoint<Long> createUnCollectedPoint(long xVal) {
-            return new AgentStatPoint<>(xVal, UNCOLLECTED_VALUE);
-        }
-    };
+    public static final Point.UncollectedPointCreator<AgentStatPoint<Long>> UNCOLLECTED_POINT_CREATOR = UncollectedPointCreatorFactory.createLongPointCreator(UNCOLLECTED_VALUE);
 
     private final AgentStatPoint<Long> openFileDescriptorCount;
 
     public SampledFileDescriptor(AgentStatPoint<Long> openFileDescriptorCount) {
-        this.openFileDescriptorCount = Objects.requireNonNull(openFileDescriptorCount, "openFileDescriptorCount must not be null");
+        this.openFileDescriptorCount = Objects.requireNonNull(openFileDescriptorCount, "openFileDescriptorCount");
     }
 
     public AgentStatPoint<Long> getOpenFileDescriptorCount() {

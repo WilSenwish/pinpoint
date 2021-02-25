@@ -27,7 +27,7 @@ import com.navercorp.pinpoint.thrift.dto.TSpanChunk;
 import com.navercorp.pinpoint.thrift.dto.TSpanEvent;
 import com.navercorp.pinpoint.thrift.io.*;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.thrift.TBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +39,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Taejin Koo
@@ -48,21 +49,15 @@ public class SpanStreamUDPPacketHandlerFactory<T extends DatagramPacket> impleme
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final DeserializerFactory<HeaderTBaseDeserializer> deserializerFactory = new ThreadLocalHeaderTBaseDeserializerFactory<>(new HeaderTBaseDeserializerFactory());
-    private final DispatchHandler dispatchHandler;
+    private final DispatchHandler<TBase<?, ?>, TBase<?, ?>> dispatchHandler;
 
     @SuppressWarnings("unused")
     private final TBaseFilter<SocketAddress>  filter;
     private final PacketHandler<T> dispatchPacket = new DispatchPacket();
 
-    public SpanStreamUDPPacketHandlerFactory(DispatchHandler dispatchHandler, TBaseFilter<SocketAddress>  filter) {
-        if (dispatchHandler == null) {
-            throw new NullPointerException("dispatchHandler must not be null");
-        }
-        if (filter == null) {
-            throw new NullPointerException("filter must not be null");
-        }
-        this.dispatchHandler = dispatchHandler;
-        this.filter = filter;
+    public SpanStreamUDPPacketHandlerFactory(DispatchHandler<TBase<?, ?>, TBase<?, ?>> dispatchHandler, TBaseFilter<SocketAddress>  filter) {
+        this.dispatchHandler = Objects.requireNonNull(dispatchHandler, "dispatchHandler");
+        this.filter = Objects.requireNonNull(filter, "filter");
     }
 
 
@@ -73,10 +68,13 @@ public class SpanStreamUDPPacketHandlerFactory<T extends DatagramPacket> impleme
 
     // stateless
     private class DispatchPacket implements PacketHandler<T> {
-        private final ServerResponse fake = new ServerResponse() {
+        private final ServerResponse<TBase<?, ?>> fake = new ServerResponse<TBase<?, ?>>() {
             @Override
-            public void write(Object data) {
+            public void write(TBase<?, ?> data) {
+            }
 
+            @Override
+            public void finish() {
             }
         };
 
@@ -126,7 +124,7 @@ public class SpanStreamUDPPacketHandlerFactory<T extends DatagramPacket> impleme
                     List<TSpanEvent> spanEventList = getSpanEventList(requestList);
 
                     Message<TBase<?, ?>> lastMessage = requestList.get(requestList.size() - 1);
-                    TBase tBase = lastMessage.getData();
+                    TBase<?, ?> tBase = lastMessage.getData();
                     if (tBase instanceof TSpan) {
                         ((TSpan) tBase).setSpanEventList(spanEventList);
                     } else if (tBase instanceof TSpanChunk) {

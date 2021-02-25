@@ -23,6 +23,7 @@ import com.navercorp.pinpoint.web.alarm.vo.Rule;
 /**
  * @author minwoo.jung
  */
+@Deprecated
 public class ErrorCountToCalleeChecker extends LongValueAlarmChecker {
 
     public ErrorCountToCalleeChecker(MapStatisticsCallerDataCollector dataCollector, Rule rule) {
@@ -31,8 +32,8 @@ public class ErrorCountToCalleeChecker extends LongValueAlarmChecker {
 
     @Override
     protected Long getDetectedValue() {
-        String calleName = rule.getNotes();
-        return ((MapStatisticsCallerDataCollector)dataCollector).getCount(calleName, DataCategory.ERROR_COUNT);
+        String calleeName = rule.getNotes();
+        return ((MapStatisticsCallerDataCollector)dataCollector).getCount(calleeName, DataCategory.ERROR_COUNT);
     }
     
     @Override

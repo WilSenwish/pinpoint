@@ -20,7 +20,7 @@ import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.bootstrap.instrument.DynamicTransformTrigger;
 import com.navercorp.pinpoint.bootstrap.instrument.InstrumentContext;
 import com.navercorp.pinpoint.bootstrap.instrument.matcher.Matcher;
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.util.ArrayList;
@@ -37,13 +37,13 @@ public class ClassFileTransformerLoader {
     private final List<ClassFileTransformer> classTransformers = new ArrayList<ClassFileTransformer>();
 
     public ClassFileTransformerLoader(ProfilerConfig profilerConfig, DynamicTransformTrigger dynamicTransformTrigger) {
-        this.profilerConfig = Assert.requireNonNull(profilerConfig, "profilerConfig must not be null");
-        this.dynamicTransformTrigger = Assert.requireNonNull(dynamicTransformTrigger, "dynamicTransformTrigger must not be null");
+        this.profilerConfig = Objects.requireNonNull(profilerConfig, "profilerConfig");
+        this.dynamicTransformTrigger = Objects.requireNonNull(dynamicTransformTrigger, "dynamicTransformTrigger");
     }
 
     public void addClassFileTransformer(InstrumentContext instrumentContext, final Matcher matcher, final TransformCallbackProvider transformCallbackProvider) {
-        Assert.requireNonNull(instrumentContext, "instrumentContext must not be null");
-        Assert.requireNonNull(transformCallbackProvider, "transformCallbackProvider must not be null");
+        Objects.requireNonNull(instrumentContext, "instrumentContext");
+        Objects.requireNonNull(transformCallbackProvider, "transformCallbackProvider");
 
         final MatchableClassFileTransformer guard = new MatchableClassFileTransformerDelegate(profilerConfig, instrumentContext, matcher, transformCallbackProvider);
         classTransformers.add(guard);
@@ -52,8 +52,8 @@ public class ClassFileTransformerLoader {
 
 
     public void addClassFileTransformer(InstrumentContext instrumentContext, ClassLoader classLoader, String targetClassName, TransformCallbackProvider transformCallbackProvider) {
-        Assert.requireNonNull(targetClassName, "targetClassName must not be null");
-        Assert.requireNonNull(transformCallbackProvider, "transformCallbackProvider must not be null");
+        Objects.requireNonNull(targetClassName, "targetClassName");
+        Objects.requireNonNull(transformCallbackProvider, "transformCallbackProvider");
 
         final ClassFileTransformerDelegate classFileTransformerGuardDelegate = new ClassFileTransformerDelegate(profilerConfig, instrumentContext, transformCallbackProvider);
 

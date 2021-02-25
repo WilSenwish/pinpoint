@@ -1,11 +1,11 @@
 /*
- * Copyright 2014 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ package com.navercorp.pinpoint.web.vo.callstacks;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.navercorp.pinpoint.common.server.bo.AnnotationBo;
 import com.navercorp.pinpoint.common.server.bo.ApiMetaDataBo;
@@ -27,8 +28,8 @@ import com.navercorp.pinpoint.common.trace.AnnotationKey;
 import com.navercorp.pinpoint.common.trace.AnnotationKeyMatcher;
 import com.navercorp.pinpoint.common.trace.ServiceType;
 import com.navercorp.pinpoint.common.server.util.AnnotationUtils;
-import com.navercorp.pinpoint.common.util.ApiDescription;
-import com.navercorp.pinpoint.common.server.util.ApiDescriptionParser;
+import com.navercorp.pinpoint.common.server.trace.ApiDescription;
+import com.navercorp.pinpoint.common.server.trace.ApiDescriptionParser;
 import com.navercorp.pinpoint.web.calltree.span.Align;
 import com.navercorp.pinpoint.web.calltree.span.CallTreeNode;
 import com.navercorp.pinpoint.web.service.AnnotationKeyMatcherService;
@@ -45,9 +46,9 @@ public class RecordFactory {
 
     // spans with id = 0 are regarded as root - start at 1
     private int idGen = 1;
-    private AnnotationKeyMatcherService annotationKeyMatcherService;
-    private ServiceTypeRegistryService registry;
-    private AnnotationKeyRegistryService annotationKeyRegistryService;
+    private final AnnotationKeyMatcherService annotationKeyMatcherService;
+    private final ServiceTypeRegistryService registry;
+    private final AnnotationKeyRegistryService annotationKeyRegistryService;
     private final ApiDescriptionParser apiDescriptionParser = new ApiDescriptionParser();
     private final AnnotationRecordFormatter annotationRecordFormatter;
     private final ProxyRequestTypeRegistryService proxyRequestTypeRegistryService;
@@ -203,10 +204,8 @@ public class RecordFactory {
     }
 
     private Api getApi(final Align align) {
-
         final AnnotationBo annotation = AnnotationUtils.findAnnotationBo(align.getAnnotationBoList(), AnnotationKey.API_METADATA);
         if (annotation != null) {
-
             final Api api = new Api();
             final ApiMetaDataBo apiMetaData = (ApiMetaDataBo) annotation.getValue();
             String apiInfo = getApiInfo(apiMetaData);
@@ -217,15 +216,12 @@ public class RecordFactory {
                     ApiDescription apiDescription = apiDescriptionParser.parse(api.description);
                     api.setTitle(apiDescription.getSimpleMethodDescription());
                     api.setClassName(apiDescription.getSimpleClassName());
-                } catch (Exception e) {
-                    logger.debug("Failed to api parse. {}", api.description, e);
+                } catch (Exception ignored) {
                 }
             }
             api.setMethodTypeEnum(apiMetaData.getMethodTypeEnum());
             return api;
-
         } else {
-
             final Api api = new Api();
             AnnotationKey apiMetaDataError = getApiMetaDataError(align.getAnnotationBoList());
             api.setTitle(apiMetaDataError.getName());
@@ -298,10 +294,7 @@ public class RecordFactory {
         }
 
         public void setMethodTypeEnum(MethodTypeEnum methodTypeEnum) {
-            if (methodTypeEnum == null) {
-                throw new NullPointerException("methodTypeEnum must not be null");
-            }
-            this.methodTypeEnum = methodTypeEnum;
+            this.methodTypeEnum = Objects.requireNonNull(methodTypeEnum, "methodTypeEnum");
         }
     }
 }

@@ -19,7 +19,7 @@ package com.navercorp.pinpoint.profiler.instrument;
 import com.google.inject.Provider;
 import com.navercorp.pinpoint.bootstrap.context.MethodDescriptor;
 import com.navercorp.pinpoint.bootstrap.interceptor.Interceptor;
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 import com.navercorp.pinpoint.profiler.instrument.interceptor.InterceptorDefinition;
 import com.navercorp.pinpoint.profiler.instrument.interceptor.InterceptorDefinitionFactory;
 import com.navercorp.pinpoint.profiler.interceptor.registry.InterceptorRegistryBinder;
@@ -43,11 +43,11 @@ public class DefaultEngineComponent implements EngineComponent {
                                   InterceptorDefinitionFactory interceptorDefinitionFactory,
                                   Provider<ApiMetaDataService> apiMetaDataServiceProvider,
                                   ScopeFactory scopeFactory) {
-        this.objectBinderFactory = Assert.requireNonNull(objectBinderFactory, "objectBinderFactory must not be null");
-        this.interceptorRegistryBinder = Assert.requireNonNull(interceptorRegistryBinder, "interceptorRegistryBinder must not be null");
-        this.interceptorDefinitionFactory = Assert.requireNonNull(interceptorDefinitionFactory, "interceptorDefinitionFactory must not be null");
-        this.apiMetaDataServiceProvider = Assert.requireNonNull(apiMetaDataServiceProvider, "apiMetaDataService must not be null");
-        this.scopeFactory = Assert.requireNonNull(scopeFactory, "scopeFactory must not be null");
+        this.objectBinderFactory = Objects.requireNonNull(objectBinderFactory, "objectBinderFactory");
+        this.interceptorRegistryBinder = Objects.requireNonNull(interceptorRegistryBinder, "interceptorRegistryBinder");
+        this.interceptorDefinitionFactory = Objects.requireNonNull(interceptorDefinitionFactory, "interceptorDefinitionFactory");
+        this.apiMetaDataServiceProvider = Objects.requireNonNull(apiMetaDataServiceProvider, "apiMetaDataService");
+        this.scopeFactory = Objects.requireNonNull(scopeFactory, "scopeFactory");
     }
 
     @Override

@@ -19,6 +19,7 @@ package com.navercorp.pinpoint.profiler.context.provider;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.navercorp.pinpoint.bootstrap.plugin.jdbc.JdbcUrlParserV2;
+import java.util.Objects;
 import com.navercorp.pinpoint.profiler.context.monitor.DefaultJdbcUrlParsingService;
 import com.navercorp.pinpoint.profiler.context.monitor.JdbcUrlParsingService;
 import com.navercorp.pinpoint.profiler.plugin.PluginContextLoadResult;
@@ -34,10 +35,7 @@ public class JdbcUrlParsingServiceProvider implements Provider<JdbcUrlParsingSer
 
     @Inject
     public JdbcUrlParsingServiceProvider(Provider<PluginContextLoadResult> pluginContextLoadResultProvider) {
-        if (pluginContextLoadResultProvider == null) {
-            throw new NullPointerException("pluginContextLoadResult must not be null");
-        }
-        this.pluginContextLoadResultProvider = pluginContextLoadResultProvider;
+        this.pluginContextLoadResultProvider = Objects.requireNonNull(pluginContextLoadResultProvider, "pluginContextLoadResultProvider");
     }
 
     @Override

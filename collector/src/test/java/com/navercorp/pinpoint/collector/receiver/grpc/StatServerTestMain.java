@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,25 @@
 
 package com.navercorp.pinpoint.collector.receiver.grpc;
 
+import com.google.protobuf.GeneratedMessageV3;
 import com.navercorp.pinpoint.collector.receiver.DispatchHandler;
+import com.navercorp.pinpoint.collector.receiver.grpc.service.DefaultServerRequestFactory;
 import com.navercorp.pinpoint.collector.receiver.grpc.service.StatService;
+import com.navercorp.pinpoint.collector.receiver.grpc.service.StreamExecutorServerInterceptorFactory;
 import com.navercorp.pinpoint.common.server.util.AddressFilter;
 import com.navercorp.pinpoint.grpc.server.ServerOption;
 import com.navercorp.pinpoint.grpc.trace.PResult;
 import com.navercorp.pinpoint.io.request.ServerRequest;
 import com.navercorp.pinpoint.io.request.ServerResponse;
-import io.grpc.BindableService;
+import io.grpc.ServerInterceptor;
+import io.grpc.ServerInterceptors;
+import io.grpc.ServerServiceDefinition;
+import org.springframework.beans.factory.FactoryBean;
 
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -39,8 +47,9 @@ public class StatServerTestMain {
         grpcReceiver.setBeanName("StatServer");
         grpcReceiver.setBindPort(PORT);
 
-        BindableService bindableService = new StatService(new MockDispatchHandler());
-        grpcReceiver.setBindableServiceList(Arrays.asList(bindableService));
+        ExecutorService executorService = Executors.newFixedThreadPool(8);
+        ServerServiceDefinition bindableService = newStatBindableService(executorService);
+        grpcReceiver.setBindableServiceList(Collections.singletonList(bindableService));
         grpcReceiver.setAddressFilter(new MockAddressFilter());
         grpcReceiver.setExecutor(Executors.newFixedThreadPool(8));
         grpcReceiver.setEnable(true);
@@ -52,23 +61,31 @@ public class StatServerTestMain {
         grpcReceiver.destroy();
     }
 
+    private ServerServiceDefinition newStatBindableService(Executor executor) throws Exception {
+        FactoryBean<ServerInterceptor> interceptorFactory = new StreamExecutorServerInterceptorFactory(executor, 100, Executors.newSingleThreadScheduledExecutor(), 1000, 10);
+        ServerInterceptor interceptor = interceptorFactory.getObject();
+        StatService statService = new StatService(new MockDispatchHandler(), new DefaultServerRequestFactory());
+        return ServerInterceptors.intercept(statService, interceptor);
+    }
+
     public static void main(String[] args) throws Exception {
         StatServerTestMain main = new StatServerTestMain();
         main.run();
     }
 
-    private static class MockDispatchHandler implements DispatchHandler {
+    private static class MockDispatchHandler implements DispatchHandler<GeneratedMessageV3, GeneratedMessageV3> {
         private static final AtomicInteger counter = new AtomicInteger(0);
 
         @Override
-        public void dispatchSendMessage(ServerRequest serverRequest) {
+        public void dispatchSendMessage(ServerRequest<GeneratedMessageV3> serverRequest) {
             System.out.println("Dispatch send message " + serverRequest);
         }
 
         @Override
-        public void dispatchRequestMessage(ServerRequest serverRequest, ServerResponse serverResponse) {
+        public void dispatchRequestMessage(ServerRequest<GeneratedMessageV3> serverRequest, ServerResponse<GeneratedMessageV3> serverResponse) {
             System.out.println("Dispatch request message " + serverRequest + ", " + serverResponse);
-            serverResponse.write(PResult.newBuilder().setMessage("Success" + counter.getAndIncrement()).build());
+            PResult pResult = PResult.newBuilder().setMessage("Success" + counter.getAndIncrement()).build();
+            serverResponse.write(pResult);
         }
     }
 

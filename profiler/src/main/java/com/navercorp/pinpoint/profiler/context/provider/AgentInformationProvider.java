@@ -18,20 +18,22 @@ package com.navercorp.pinpoint.profiler.context.provider;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.navercorp.pinpoint.common.util.IdValidateUtils;
 import com.navercorp.pinpoint.bootstrap.util.NetworkUtils;
 import com.navercorp.pinpoint.common.Version;
 import com.navercorp.pinpoint.common.trace.ServiceType;
+import com.navercorp.pinpoint.common.util.IdValidateUtils;
 import com.navercorp.pinpoint.common.util.JvmUtils;
 import com.navercorp.pinpoint.common.util.SystemPropertyKey;
 import com.navercorp.pinpoint.profiler.AgentInformation;
 import com.navercorp.pinpoint.profiler.DefaultAgentInformation;
 import com.navercorp.pinpoint.profiler.context.module.AgentId;
-import com.navercorp.pinpoint.profiler.context.module.ApplicationServerType;
 import com.navercorp.pinpoint.profiler.context.module.AgentStartTime;
 import com.navercorp.pinpoint.profiler.context.module.ApplicationName;
+import com.navercorp.pinpoint.profiler.context.module.ApplicationServerType;
 import com.navercorp.pinpoint.profiler.context.module.Container;
 import com.navercorp.pinpoint.profiler.util.RuntimeMXBeanUtils;
+
+import java.util.Objects;
 
 /**
  * @author Woonduk Kang(emeroad)
@@ -47,20 +49,16 @@ public class AgentInformationProvider implements Provider<AgentInformation> {
     @Inject
     public AgentInformationProvider(@AgentId String agentId, @ApplicationName String applicationName, @Container boolean isContainer, @AgentStartTime long agentStartTime, @ApplicationServerType ServiceType serverType) {
         if (agentId == null) {
-            throw new NullPointerException("agentId must not be null");
+            throw new NullPointerException("agentId");
         }
         if (applicationName == null) {
-            throw new NullPointerException("applicationName must not be null");
+            throw new NullPointerException("applicationName");
         }
-        if (serverType == null) {
-            throw new NullPointerException("serverType must not be null");
-        }
-
         this.agentId = checkId("agentId", agentId);
         this.applicationName = checkId("applicationName", applicationName);
         this.isContainer = isContainer;
         this.agentStartTime = agentStartTime;
-        this.serverType = serverType;
+        this.serverType = Objects.requireNonNull(serverType, "serverType");
 
     }
 

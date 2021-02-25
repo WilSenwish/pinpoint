@@ -16,7 +16,7 @@
 
 package com.navercorp.pinpoint.rpc.client;
 
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 import com.navercorp.pinpoint.rpc.PipelineFactory;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
@@ -45,15 +45,15 @@ public class ConnectionFactory {
     ConnectionFactory(Timer connectTimer, Closed closed, ChannelFactory channelFactory,
                              SocketOption socketOption, ClientOption clientOption, ClientHandlerFactory clientHandlerFactory, PipelineFactory pipelineFactory) {
 
-        this.connectTimer = Assert.requireNonNull(connectTimer, "connectTimer must not be null");
-        this.closed = Assert.requireNonNull(closed, "release must not be null");
+        this.connectTimer = Objects.requireNonNull(connectTimer, "connectTimer");
+        this.closed = Objects.requireNonNull(closed, "release");
 
-        this.channelFactory = Assert.requireNonNull(channelFactory, "channelFactory must not be null");
+        this.channelFactory = Objects.requireNonNull(channelFactory, "channelFactory");
 
-        this.socketOption = Assert.requireNonNull(socketOption, "option must not be null");
-        this.clientOption = Assert.requireNonNull(clientOption, "connectTimer must not be null");
-        this.clientHandlerFactory = Assert.requireNonNull(clientHandlerFactory, "clientHandlerFactory must not be null");
-        this.pipelineFactory = Assert.requireNonNull(pipelineFactory, "pipelineFactory must not be null");
+        this.socketOption = Objects.requireNonNull(socketOption, "option");
+        this.clientOption = Objects.requireNonNull(clientOption, "connectTimer");
+        this.clientHandlerFactory = Objects.requireNonNull(clientHandlerFactory, "clientHandlerFactory");
+        this.pipelineFactory = Objects.requireNonNull(pipelineFactory, "pipelineFactory");
     }
 
     public boolean isClosed() {
@@ -82,9 +82,9 @@ public class ConnectionFactory {
 
 
         private ConnectEvent(ConnectionFactory connectionFactory, SocketAddressProvider socketAddressProvider, PinpointClient pinpointClient) {
-            this.connectionFactory = Assert.requireNonNull(connectionFactory, "connectionFactory must not be null");
-            this.socketAddressProvider = Assert.requireNonNull(socketAddressProvider, "socketAddressProvider must not be null");
-            this.pinpointClient = Assert.requireNonNull(pinpointClient, "pinpointClient must not be null");
+            this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
+            this.socketAddressProvider = Objects.requireNonNull(socketAddressProvider, "socketAddressProvider");
+            this.pinpointClient = Objects.requireNonNull(pinpointClient, "pinpointClient");
         }
 
         @Override

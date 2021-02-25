@@ -25,12 +25,14 @@ import org.springframework.batch.core.configuration.JobLocator;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
+
+import java.util.Objects;
 
 /**
  * @author minwoo.jung<minwoo.jung@navercorp.com>
  *
  */
+@Deprecated
 public class JobLaunchSupport implements InitializingBean {
 
     @Autowired
@@ -54,7 +56,7 @@ public class JobLaunchSupport implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        Assert.notNull(locator, "jobLocator name must be provided");
-        Assert.notNull(launcher, "jobLauncher name must be provided");
+        Objects.requireNonNull(locator, "jobLocator name");
+        Objects.requireNonNull(launcher, "jobLauncher name");
     }
 }

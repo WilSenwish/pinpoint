@@ -1,11 +1,11 @@
 /*
- * Copyright 2014 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author emeroad
@@ -72,42 +73,9 @@ public final class ThreadMXBeanUtils {
 //        }
     }
 
-    /**
-     * @deprecated Since 1.7.0. Use {@link #getThreadInfo(long)}
-     */
-    @Deprecated
-    public static ThreadInfo findThread(Thread thread) {
-        Assert.requireNonNull(thread, "thread must not be null");
-        return getThreadInfo(thread.getId());
-    }
-
-    /**
-     * @deprecated Since 1.7.0. Use {@link #getThreadInfo(long, int)}
-     */
-    @Deprecated
-    public static ThreadInfo findThread(Thread thread, int stackTraceMaxDepth) {
-        Assert.requireNonNull(thread, "thread must not be null");
-        return getThreadInfo(thread.getId(), stackTraceMaxDepth);
-    }
-
-    /**
-     * @deprecated Since 1.7.0. Use {@link #getThreadInfo(long)}
-     */
-    @Deprecated
-    public static ThreadInfo findThread(long id) {
-        return getThreadInfo(id, DEFAULT_STACK_TRACE_MAX_DEPTH);
-    }
 
     public static ThreadInfo getThreadInfo(long id) {
         return getThreadInfo(id, DEFAULT_STACK_TRACE_MAX_DEPTH);
-    }
-
-    /**
-     * @deprecated Since 1.7.0. Use {@link #getThreadInfo(long, int)}
-     */
-    @Deprecated
-    public static ThreadInfo findThread(long id, int stackTraceMaxDepth) {
-        return getThreadInfo(id, stackTraceMaxDepth);
     }
 
     public static ThreadInfo getThreadInfo(long id, int stackTraceMaxDepth) {
@@ -127,14 +95,14 @@ public final class ThreadMXBeanUtils {
     }
 
     public static List<ThreadInfo> findThread(String threadName) {
-        Assert.requireNonNull(threadName, "threadName must not be null");
+        Objects.requireNonNull(threadName, "threadName");
 
         ThreadInfo[] threadInfos = dumpAllThread();
         if (threadInfos == null) {
             return Collections.emptyList();
         }
 
-        ArrayList<ThreadInfo> threadInfoList = new ArrayList<ThreadInfo>(1);
+        List<ThreadInfo> threadInfoList = new ArrayList<ThreadInfo>(1);
         for (ThreadInfo threadInfo : threadInfos) {
             if (threadName.equals(threadInfo.getThreadName())) {
                 threadInfoList.add(threadInfo);

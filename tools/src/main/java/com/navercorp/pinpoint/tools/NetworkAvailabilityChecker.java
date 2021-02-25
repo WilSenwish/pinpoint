@@ -16,26 +16,28 @@
 
 package com.navercorp.pinpoint.tools;
 
-import com.navercorp.pinpoint.bootstrap.config.ThriftTransportConfig;
 import com.navercorp.pinpoint.bootstrap.config.DefaultProfilerConfig;
 import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
+import com.navercorp.pinpoint.common.util.PropertyUtils;
+
 import com.navercorp.pinpoint.thrift.io.HeaderTBaseSerializer;
 import com.navercorp.pinpoint.thrift.io.HeaderTBaseSerializerFactory;
 import com.navercorp.pinpoint.thrift.io.NetworkAvailabilityCheckPacket;
 import com.navercorp.pinpoint.tools.network.NetworkChecker;
 import com.navercorp.pinpoint.tools.network.TCPChecker;
 import com.navercorp.pinpoint.tools.network.UDPChecker;
+import com.navercorp.pinpoint.tools.network.grpc.GrpcTransportConfig;
+import com.navercorp.pinpoint.tools.network.thrift.ThriftTransportConfig;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Properties;
 
 /**
- * 
  * @author netspider
- * 
  */
 public class NetworkAvailabilityChecker {
 
@@ -49,32 +51,104 @@ public class NetworkAvailabilityChecker {
 
         String configPath = args[0];
 
+        Properties properties = null;
         ProfilerConfig profilerConfig = null;
         try {
-            profilerConfig = DefaultProfilerConfig.load(configPath);
+            properties = PropertyUtils.loadProperty(configPath);
+            profilerConfig = new DefaultProfilerConfig(properties);
         } catch (IOException e) {
             e.printStackTrace();
             return;
         }
 
-        ThriftTransportConfig thriftTransportConfig = profilerConfig.getThriftTransportConfig();
-        try {
-            checkUDPStat(thriftTransportConfig);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (profilerConfig.getTransportModule().toString().equals("GRPC")) {
+
+            System.out.println("Transport Module set to GRPC");
+
+            GrpcTransportConfig grpcTransportConfig = new GrpcTransportConfig();
+            grpcTransportConfig.read(properties);
+
+            try {
+                checkGRPCBase(grpcTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                checkGRPCMeta(grpcTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                checkGRPCStat(grpcTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                checkGRPCSpan(grpcTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } else {
+
+            System.out.println("Transport Module set to THRIFT");
+            ThriftTransportConfig thriftTransportConfig = new ThriftTransportConfig();
+            thriftTransportConfig.read(properties);
+            try {
+                checkUDPStat(thriftTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                checkUDPSpan(thriftTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                checkTCP(thriftTransportConfig);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
-        try {
-            checkUDPSpan(thriftTransportConfig);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        try {
-            checkTCP(thriftTransportConfig);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    }
+
+    private static void checkGRPCBase(GrpcTransportConfig grpcTransportConfig) throws Exception {
+        String ip = grpcTransportConfig.getAgentCollectorIp();
+        int port = grpcTransportConfig.getAgentCollectorPort();
+
+        NetworkChecker checker = new TCPChecker("TCP Base", ip, port);
+        checker.check();
+    }
+
+    private static void checkGRPCMeta(GrpcTransportConfig grpcTransportConfig) throws Exception {
+        String ip = grpcTransportConfig.getMetadataCollectorIp();
+        int port = grpcTransportConfig.getMetadataCollectorPort();
+
+        NetworkChecker checker = new TCPChecker("TCP Meta", ip, port);
+        checker.check();
+    }
+
+    private static void checkGRPCStat(GrpcTransportConfig grpcTransportConfig) throws Exception {
+        String ip = grpcTransportConfig.getStatCollectorIp();
+        int port = grpcTransportConfig.getStatCollectorPort();
+
+        NetworkChecker checker = new TCPChecker("TCP Stat", ip, port);
+        checker.check();
+    }
+
+    private static void checkGRPCSpan(GrpcTransportConfig grpcTransportConfig) throws Exception {
+        String ip = grpcTransportConfig.getSpanCollectorIp();
+        int port = grpcTransportConfig.getSpanCollectorPort();
+
+        NetworkChecker checker = new TCPChecker("TCP Span", ip, port);
+        checker.check();
     }
 
     private static void checkUDPStat(ThriftTransportConfig profilerConfig) throws Exception {

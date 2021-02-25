@@ -18,7 +18,6 @@ package com.navercorp.pinpoint.web.cluster.zookeeper;
 
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.CreateNodeMessage;
 import com.navercorp.pinpoint.common.server.cluster.zookeeper.ZookeeperClient;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.common.util.CollectionUtils;
 import com.navercorp.pinpoint.common.util.MapUtils;
 
@@ -30,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Taejin Koo
@@ -79,7 +79,7 @@ public class ZookeeperClusterDataManagerHelper {
     }
 
     public boolean pushZnode(ZookeeperClient client, CreateNodeMessage createNodeMessage) {
-        Assert.requireNonNull(createNodeMessage, "createNodeMessage must not be null");
+        Objects.requireNonNull(createNodeMessage, "createNodeMessage");
 
         try {
             String nodePath = createNodeMessage.getNodePath();

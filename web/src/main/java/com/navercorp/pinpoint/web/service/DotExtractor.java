@@ -1,11 +1,11 @@
 /*
- * Copyright 2014 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,12 @@ package com.navercorp.pinpoint.web.service;
 
 import com.navercorp.pinpoint.common.server.bo.SpanBo;
 import com.navercorp.pinpoint.web.scatter.ScatterData;
+import com.navercorp.pinpoint.web.scatter.ScatterDataBuilder;
 import com.navercorp.pinpoint.web.vo.*;
 import com.navercorp.pinpoint.web.vo.scatter.ApplicationScatterScanResult;
 import com.navercorp.pinpoint.web.vo.scatter.Dot;
 import com.navercorp.pinpoint.web.vo.scatter.ScatterScanResult;
-import com.navercorp.pinpoint.common.util.TransactionId;
+import com.navercorp.pinpoint.common.profiler.util.TransactionId;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +49,8 @@ public class DotExtractor {
     }
 
     public void addDot(Application application, Dot dot) {
-        Objects.requireNonNull(application, "application must not be null");
-        Objects.requireNonNull(dot, "dot must not be null");
+        Objects.requireNonNull(application, "application");
+        Objects.requireNonNull(dot, "dot");
 
         final List<Dot> dotList = getDotList(application);
         dotList.add(dot);
@@ -57,7 +58,7 @@ public class DotExtractor {
     }
 
     public Dot newDot(SpanBo span) {
-        Objects.requireNonNull(span, "span must not be null");
+        Objects.requireNonNull(span, "span");
 
         final TransactionId transactionId = span.getTransactionId();
         return new Dot(transactionId, span.getCollectorAcceptTime(), span.getElapsed(), span.getErrCode(), span.getAgentId());
@@ -85,10 +86,10 @@ public class DotExtractor {
             Application application = entry.getKey();
             List<Dot> dotList = entry.getValue();
 
-            ScatterData scatterData = new ScatterData(from, to, xGroupUnitMillis, yGroupUnitMillis);
+            ScatterDataBuilder scatterData = new ScatterDataBuilder(from, to, xGroupUnitMillis, yGroupUnitMillis);
             scatterData.addDot(dotList);
 
-            applicationScatterDataMap.put(application, scatterData);
+            applicationScatterDataMap.put(application, scatterData.build());
         }
         return applicationScatterDataMap;
     }

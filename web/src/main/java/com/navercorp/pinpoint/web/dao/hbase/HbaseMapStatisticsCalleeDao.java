@@ -1,11 +1,11 @@
 /*
- * Copyright 2014 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ import com.navercorp.pinpoint.common.hbase.HbaseOperations2;
 import com.navercorp.pinpoint.common.hbase.ResultsExtractor;
 import com.navercorp.pinpoint.common.hbase.RowMapper;
 import com.navercorp.pinpoint.common.hbase.TableDescriptor;
-import com.navercorp.pinpoint.common.util.ApplicationMapStatisticsUtils;
+import com.navercorp.pinpoint.common.profiler.util.ApplicationMapStatisticsUtils;
 import com.navercorp.pinpoint.web.applicationmap.rawdata.LinkDataMap;
 import com.navercorp.pinpoint.web.dao.MapStatisticsCalleeDao;
 import com.navercorp.pinpoint.web.mapper.MapStatisticsTimeWindowReducer;
@@ -37,7 +37,6 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Scan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
@@ -53,7 +52,7 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
     private static final int MAP_STATISTICS_CALLER_VER2_NUM_PARTITIONS = 32;
     private static final int SCAN_CACHE_SIZE = 40;
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private final HbaseOperations2 hbaseTemplate;
 
@@ -63,31 +62,25 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
 
     private final RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix;
 
-    @Autowired
-    private TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor;
+    private final TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor;
 
-    @Autowired
     public HbaseMapStatisticsCalleeDao(
             HbaseOperations2 hbaseTemplate,
+            TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor,
             @Qualifier("mapStatisticsCalleeMapper") RowMapper<LinkDataMap> mapStatisticsCalleeMapper,
             RangeFactory rangeFactory,
-            @Qualifier("statisticsCalleeRowKeyDistributor") RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix,
-            TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor)  {
-        this.hbaseTemplate = Objects.requireNonNull(hbaseTemplate, "hbaseTemplate must not be null");
-        this.mapStatisticsCalleeMapper = Objects.requireNonNull(mapStatisticsCalleeMapper, "mapStatisticsCalleeMapper must not be null");
-        this.rangeFactory = Objects.requireNonNull(rangeFactory, "rangeFactory must not be null");
-        this.rowKeyDistributorByHashPrefix = Objects.requireNonNull(rowKeyDistributorByHashPrefix, "rowKeyDistributorByHashPrefix must not be null");
+            @Qualifier("statisticsCalleeRowKeyDistributor") RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix)  {
+        this.hbaseTemplate = Objects.requireNonNull(hbaseTemplate, "hbaseTemplate");
         this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+        this.mapStatisticsCalleeMapper = Objects.requireNonNull(mapStatisticsCalleeMapper, "mapStatisticsCalleeMapper");
+        this.rangeFactory = Objects.requireNonNull(rangeFactory, "rangeFactory");
+        this.rowKeyDistributorByHashPrefix = Objects.requireNonNull(rowKeyDistributorByHashPrefix, "rowKeyDistributorByHashPrefix");
     }
 
     @Override
     public LinkDataMap selectCallee(Application calleeApplication, Range range) {
-        if (calleeApplication == null) {
-            throw new NullPointerException("calleeApplication must not be null");
-        }
-        if (range == null) {
-            throw new NullPointerException("range must not be null");
-        }
+        Objects.requireNonNull(calleeApplication, "calleeApplication");
+        Objects.requireNonNull(range, "range");
 
         final TimeWindow timeWindow = new TimeWindow(range, TimeWindowDownSampler.SAMPLER);
         // find distributed key - ver2.
@@ -118,8 +111,8 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
 
         Scan scan = new Scan();
         scan.setCaching(SCAN_CACHE_SIZE);
-        scan.setStartRow(startKey);
-        scan.setStopRow(endKey);
+        scan.withStartRow(startKey);
+        scan.withStopRow(endKey);
         scan.addFamily(family);
         scan.setId("ApplicationStatisticsScan");
 

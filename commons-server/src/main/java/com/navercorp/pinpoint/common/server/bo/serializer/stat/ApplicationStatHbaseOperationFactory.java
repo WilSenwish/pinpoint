@@ -22,18 +22,18 @@ import com.navercorp.pinpoint.common.server.bo.stat.join.JoinStatBo;
 import com.navercorp.pinpoint.common.server.bo.stat.join.StatType;
 
 import com.sematext.hbase.wd.AbstractRowKeyDistributor;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Scan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -53,12 +53,9 @@ public class ApplicationStatHbaseOperationFactory {
                 ApplicationStatRowKeyEncoder rowKeyEncoder,
                 ApplicationStatRowKeyDecoder rowKeyDecoder,
                 @Qualifier("applicationStatRowKeyDistributor") AbstractRowKeyDistributor rowKeyDistributor) {
-        Assert.notNull(rowKeyEncoder, "rowKeyEncoder must not be null");
-        Assert.notNull(rowKeyDecoder, "rowKeyDecoder must not be null");
-        Assert.notNull(rowKeyDistributor, "rowKeyDistributor must not be null");
-        this.rowKeyEncoder = rowKeyEncoder;
-        this.rowKeyDecoder = rowKeyDecoder;
-        this.rowKeyDistributor = rowKeyDistributor;
+        this.rowKeyEncoder = Objects.requireNonNull(rowKeyEncoder, "rowKeyEncoder");
+        this.rowKeyDecoder = Objects.requireNonNull(rowKeyDecoder, "rowKeyDecoder");
+        this.rowKeyDistributor = Objects.requireNonNull(rowKeyDistributor, "rowKeyDistributor");
     }
 
     public List<Put> createPuts(String applicationId, List<JoinStatBo> joinStatBoList, StatType statType, ApplicationStatSerializer applicationStatSerializer) {
@@ -67,7 +64,7 @@ public class ApplicationStatHbaseOperationFactory {
         }
 
         Map<Long, List<JoinStatBo>> timeslots = slotApplicationStatDataPoints(joinStatBoList);
-        List<Put> puts = new ArrayList<Put>();
+        List<Put> puts = new ArrayList<>();
         for (Map.Entry<Long, List<JoinStatBo>> timeslot : timeslots.entrySet()) {
             long baseTimestamp = timeslot.getKey();
             List<JoinStatBo> slottedApplicationStatDataPoints = timeslot.getValue();
@@ -88,7 +85,10 @@ public class ApplicationStatHbaseOperationFactory {
         final ApplicationStatRowKeyComponent endRowKeyComponenet = new ApplicationStatRowKeyComponent(applicationId, statType, AgentStatUtils.getBaseTimestamp(startTimestamp) - HbaseColumnFamily.APPLICATION_STAT_STATISTICS.TIMESPAN_MS);
         byte[] startRowKey = this.rowKeyEncoder.encodeRowKey(startRowKeyComponent);
         byte[] endRowKey = this.rowKeyEncoder.encodeRowKey(endRowKeyComponenet);
-        return new Scan(startRowKey, endRowKey);
+        Scan scan = new Scan();
+        scan.withStartRow(startRowKey);
+        scan.withStopRow(endRowKey);
+        return scan;
     }
 
     public AbstractRowKeyDistributor getRowKeyDistributor() {
@@ -106,15 +106,11 @@ public class ApplicationStatHbaseOperationFactory {
     }
 
     private <T extends JoinStatBo> Map<Long, List<T>> slotApplicationStatDataPoints(List<T> joinStatBoList) {
-        Map<Long, List<T>> timeslots = new TreeMap<Long, List<T>>();
+        Map<Long, List<T>> timeslots = new TreeMap<>();
         for (T joinStatBo : joinStatBoList) {
             long timestamp = joinStatBo.getTimestamp();
             long timeslot = AgentStatUtils.getBaseTimestamp(timestamp);
-            List<T> slottedDataPoints = timeslots.get(timeslot);
-            if (slottedDataPoints == null) {
-                slottedDataPoints = new ArrayList<T>();
-                timeslots.put(timeslot, slottedDataPoints);
-            }
+            List<T> slottedDataPoints = timeslots.computeIfAbsent(timeslot, k -> new ArrayList<>());
             slottedDataPoints.add(joinStatBo);
         }
         return timeslots;

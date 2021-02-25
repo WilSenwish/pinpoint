@@ -48,22 +48,22 @@ public class DefaultTCPPacketHandler implements TCPPacketHandler {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final boolean isDebug = logger.isDebugEnabled();
 
-    private final DispatchHandler dispatchHandler;
+    private final DispatchHandler<TBase<?, ?>, TBase<?, ?>> dispatchHandler;
 
     private final SerializerFactory<HeaderTBaseSerializer> serializerFactory;
     private final DeserializerFactory<HeaderTBaseDeserializer> deserializerFactory;
 
 
-    public DefaultTCPPacketHandler(DispatchHandler dispatchHandler, SerializerFactory<HeaderTBaseSerializer> serializerFactory, DeserializerFactory<HeaderTBaseDeserializer> deserializerFactory) {
-        this.dispatchHandler = Objects.requireNonNull(dispatchHandler, "dispatchHandler must not be null");
-        this.serializerFactory = Objects.requireNonNull(serializerFactory, "serializerFactory must not be null");
-        this.deserializerFactory = Objects.requireNonNull(deserializerFactory, "deserializerFactory must not be null");
+    public DefaultTCPPacketHandler(DispatchHandler<TBase<?, ?>, TBase<?, ?>> dispatchHandler, SerializerFactory<HeaderTBaseSerializer> serializerFactory, DeserializerFactory<HeaderTBaseDeserializer> deserializerFactory) {
+        this.dispatchHandler = Objects.requireNonNull(dispatchHandler, "dispatchHandler");
+        this.serializerFactory = Objects.requireNonNull(serializerFactory, "serializerFactory");
+        this.deserializerFactory = Objects.requireNonNull(deserializerFactory, "deserializerFactory");
     }
 
     @Override
     public void handleSend(SendPacket packet, PinpointSocket pinpointSocket) {
-        Objects.requireNonNull(packet, "packet must not be null");
-        Objects.requireNonNull(pinpointSocket, "pinpointSocket must not be null");
+        Objects.requireNonNull(packet, "packet");
+        Objects.requireNonNull(pinpointSocket, "pinpointSocket");
 
         final byte[] payload = getPayload(packet);
         final InetSocketAddress remoteAddress = (InetSocketAddress) pinpointSocket.getRemoteAddress();
@@ -82,19 +82,19 @@ public class DefaultTCPPacketHandler implements TCPPacketHandler {
     private ServerRequest<TBase<?, ?>> newServerRequest(Message<TBase<?, ?>> message, InetSocketAddress remoteSocketAddress) {
         final String remoteAddress = remoteSocketAddress.getAddress().getHostAddress();
         final int remotePort = remoteSocketAddress.getPort();
-        return new DefaultServerRequest<TBase<?, ?>>(message, remoteAddress, remotePort);
+        return new DefaultServerRequest<>(message, remoteAddress, remotePort);
     }
 
     public byte[] getPayload(BasicPacket packet) {
         final byte[] payload = packet.getPayload();
-        Objects.requireNonNull(payload, "payload must not be null");
+        Objects.requireNonNull(payload, "payload");
         return payload;
     }
 
     @Override
     public void handleRequest(RequestPacket packet, PinpointSocket pinpointSocket) {
-        Objects.requireNonNull(packet, "packet must not be null");
-        Objects.requireNonNull(pinpointSocket, "pinpointSocket must not be null");
+        Objects.requireNonNull(packet, "packet");
+        Objects.requireNonNull(pinpointSocket, "pinpointSocket");
 
         final byte[] payload = getPayload(packet);
         final InetSocketAddress remoteAddress = (InetSocketAddress) pinpointSocket.getRemoteAddress();

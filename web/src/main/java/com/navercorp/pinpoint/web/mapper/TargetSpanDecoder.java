@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,12 @@ import com.navercorp.pinpoint.common.buffer.Buffer;
 import com.navercorp.pinpoint.common.server.bo.SpanBo;
 import com.navercorp.pinpoint.common.server.bo.serializer.trace.v2.SpanDecoder;
 import com.navercorp.pinpoint.common.server.bo.serializer.trace.v2.SpanDecodingContext;
+import java.util.Objects;
+import com.navercorp.pinpoint.common.profiler.util.TransactionId;
 import com.navercorp.pinpoint.common.util.Assert;
-import com.navercorp.pinpoint.common.util.TransactionId;
 import com.navercorp.pinpoint.web.vo.GetTraceInfo;
 import com.navercorp.pinpoint.web.vo.SpanHint;
+
 
 /**
  * @author Taejin Koo
@@ -34,13 +36,13 @@ public class TargetSpanDecoder implements SpanDecoder {
     private final GetTraceInfo targetTraceInfo;
 
     public TargetSpanDecoder(SpanDecoder realSpanDecoder, GetTraceInfo targetTraceInfo) {
-        this.delegate = Assert.requireNonNull(realSpanDecoder, "realSpanDecoder must not be null");
+        this.delegate = Objects.requireNonNull(realSpanDecoder, "realSpanDecoder");
 
-        Assert.requireNonNull(targetTraceInfo, "targetTraceInfo must not be null");
+        Objects.requireNonNull(targetTraceInfo, "targetTraceInfo");
 
         SpanHint hint = targetTraceInfo.getHint();
         Assert.isTrue(hint.isSet(), "hint must be set");
-        this.targetTraceInfo = Assert.requireNonNull(targetTraceInfo, "targetTraceInfo must not be null");
+        this.targetTraceInfo = Objects.requireNonNull(targetTraceInfo, "targetTraceInfo");
     }
 
     @Override
@@ -68,7 +70,16 @@ public class TargetSpanDecoder implements SpanDecoder {
                 return null;
             }
 
-            return spanBo;
+            final String hintApplicationName = hint.getApplicationName();
+            if (hintApplicationName == null) {
+                return spanBo;
+            }
+
+            final String applicationId = spanBo.getApplicationId();
+            if (hintApplicationName.equals(applicationId)) {
+                return spanBo;
+            }
+            return null;
         }
 
         return null;

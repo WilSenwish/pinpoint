@@ -20,7 +20,6 @@ import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPlugin;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPluginGlobalContext;
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.profiler.instrument.classloading.ClassInjector;
 import com.navercorp.pinpoint.profiler.plugin.DefaultProfilerPluginGlobalContext;
 import com.navercorp.pinpoint.profiler.plugin.PluginSetup;
@@ -29,6 +28,7 @@ import com.navercorp.pinpoint.profiler.plugin.PluginsSetupResult;
 import com.navercorp.pinpoint.profiler.plugin.ProfilerPluginContextLoader;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author HyunGil Jeong
@@ -42,9 +42,9 @@ public class MockProfilerPluginContextLoader implements ProfilerPluginContextLoa
 
     public MockProfilerPluginContextLoader(ProfilerConfig profilerConfig, ServiceType configuredApplicationType,
                                            PluginSetup pluginSetup) {
-        this.profilerConfig = Assert.requireNonNull(profilerConfig, "profilerConfig must not be null");
-        this.configuredApplicationType = Assert.requireNonNull(configuredApplicationType, "configuredApplicationType must not be null");
-        this.pluginSetup = Assert.requireNonNull(pluginSetup, "pluginSetup must not be null");
+        this.profilerConfig = Objects.requireNonNull(profilerConfig, "profilerConfig");
+        this.configuredApplicationType = Objects.requireNonNull(configuredApplicationType, "configuredApplicationType");
+        this.pluginSetup = Objects.requireNonNull(pluginSetup, "pluginSetup");
     }
 
     @Override

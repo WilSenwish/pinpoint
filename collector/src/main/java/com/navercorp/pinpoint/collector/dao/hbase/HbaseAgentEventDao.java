@@ -17,9 +17,10 @@
 package com.navercorp.pinpoint.collector.dao.hbase;
 
 import com.navercorp.pinpoint.collector.dao.AgentEventDao;
+import com.navercorp.pinpoint.collector.util.CollectorUtils;
 import com.navercorp.pinpoint.common.hbase.HbaseColumnFamily;
 import com.navercorp.pinpoint.common.hbase.HbaseOperations2;
-import com.navercorp.pinpoint.common.hbase.HbaseTableConstatns;
+import com.navercorp.pinpoint.common.hbase.HbaseTableConstants;
 import com.navercorp.pinpoint.common.hbase.TableDescriptor;
 import com.navercorp.pinpoint.common.hbase.ValueMapper;
 import com.navercorp.pinpoint.common.server.bo.event.AgentEventBo;
@@ -35,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.Objects;
+
 /**
  * @author HyunGil Jeong
  */
@@ -43,24 +46,28 @@ public class HbaseAgentEventDao implements AgentEventDao {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private HbaseOperations2 hbaseTemplate;
+    private final HbaseOperations2 hbaseTemplate;
+
+    private final TableDescriptor<HbaseColumnFamily.AgentEvent> descriptor;
+
+    private final ValueMapper<AgentEventBo> valueMapper;
 
     @Autowired
-    private ValueMapper<AgentEventBo> valueMapper;
+    public HbaseAgentEventDao(HbaseOperations2 hbaseTemplate, TableDescriptor<HbaseColumnFamily.AgentEvent> descriptor, ValueMapper<AgentEventBo> valueMapper) {
+        this.hbaseTemplate = Objects.requireNonNull(hbaseTemplate, "hbaseTemplate");
+        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+        this.valueMapper = Objects.requireNonNull(valueMapper, "valueMapper");
+    }
 
-    @Autowired
-    private TableDescriptor<HbaseColumnFamily.AgentEvent> descriptor;
 
     @Override
     public void insert(AgentEventBo agentEventBo) {
-        if (agentEventBo == null) {
-            throw new NullPointerException("agentEventBo must not be null");
-        }
-
+        Objects.requireNonNull(agentEventBo, "agentEventBo");
         if (logger.isDebugEnabled()) {
-            logger.debug("insert event. {}", agentEventBo.toString());
+            logger.debug("insert agent event: {}", agentEventBo.toString());
         }
+        // Assert agentId
+        CollectorUtils.checkAgentId(agentEventBo.getAgentId());
 
         final String agentId = agentEventBo.getAgentId();
         final long eventTimestamp = agentEventBo.getEventTimestamp();
@@ -77,7 +84,6 @@ public class HbaseAgentEventDao implements AgentEventDao {
     byte[] createRowKey(String agentId, long eventTimestamp) {
         byte[] agentIdKey = BytesUtils.toBytes(agentId);
         long reverseStartTimestamp = TimeUtils.reverseTimeMillis(eventTimestamp);
-        return RowKeyUtils.concatFixedByteAndLong(agentIdKey, HbaseTableConstatns.AGENT_NAME_MAX_LEN, reverseStartTimestamp);
+        return RowKeyUtils.concatFixedByteAndLong(agentIdKey, HbaseTableConstants.AGENT_NAME_MAX_LEN, reverseStartTimestamp);
     }
-
 }

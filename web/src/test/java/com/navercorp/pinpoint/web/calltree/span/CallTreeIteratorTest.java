@@ -17,7 +17,7 @@ package com.navercorp.pinpoint.web.calltree.span;
 
 import static org.junit.Assert.assertEquals;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ public class CallTreeIteratorTest {
     private static final long START_TIME = 1430983914531L;
     private static final int ELAPSED = 10;
 
-    private CallTreeFactory factory = new CallTreeFactory();
+    private final CallTreeFactory factory = new CallTreeFactory();
 
     @Test
     public void internal00() {
@@ -565,7 +565,7 @@ public class CallTreeIteratorTest {
         private final int exec;
 
         public StackEvent(String event, int depth, int gap, int exec) {
-            this.event = Objects.requireNonNull(event, "event must not be null");
+            this.event = Objects.requireNonNull(event, "event");
             this.depth = depth;
             this.gap = gap;
             this.exec = exec;

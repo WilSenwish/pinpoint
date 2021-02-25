@@ -22,6 +22,7 @@ import org.apache.thrift.TException;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -29,14 +30,14 @@ import java.util.Map;
  */
 public class ByteArrayHeaderWriter implements HeaderWriter {
 
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
     private final Header header;
     private final AutomaticBuffer buffer;
     private final HeaderEntity headerEntity;
 
     public ByteArrayHeaderWriter(Header header) {
         if (header == null) {
-            throw new NullPointerException("header must not be null.");
+            throw new NullPointerException("header");
         }
 
         this.buffer = new AutomaticBuffer(4);
@@ -46,7 +47,7 @@ public class ByteArrayHeaderWriter implements HeaderWriter {
 
     public ByteArrayHeaderWriter(Header header, HeaderEntity headerEntity) {
         if (header == null) {
-            throw new NullPointerException("header must not be null.");
+            throw new NullPointerException("header");
         }
 
         this.buffer = new AutomaticBuffer(4);

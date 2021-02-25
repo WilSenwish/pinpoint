@@ -16,29 +16,31 @@
 
 package com.navercorp.pinpoint.grpc.server;
 
-import com.navercorp.pinpoint.common.util.Assert;
 import io.grpc.Attributes;
 import io.grpc.ServerTransportFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 public class MetadataServerTransportFilter extends ServerTransportFilter {
 
+    public static final Attributes.Key<Long> LOG_ID = Attributes.Key.create("logId");
     public static final Attributes.Key<TransportMetadata> TRANSPORT_METADATA_KEY = Attributes.Key.create("transportMetadata");
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final TransportMetadataFactory transportMetadataFactory;
 
     public MetadataServerTransportFilter(TransportMetadataFactory transportMetadataFactory) {
-        this.transportMetadataFactory = Assert.requireNonNull(transportMetadataFactory, "transportMetadataFactory must not be null");
+        this.transportMetadataFactory = Objects.requireNonNull(transportMetadataFactory, "transportMetadataFactory");
     }
 
     @Override
     public Attributes transportReady(Attributes attributes) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("transportReady attributes={}", attributes);
-        }
         final TransportMetadata transportMetadata = transportMetadataFactory.build(attributes);
+        if (logger.isDebugEnabled()) {
+            logger.debug("transportReady transportMetadata={}", transportMetadata);
+        }
 
         Attributes.Builder builder = attributes.toBuilder();
         builder.set(TRANSPORT_METADATA_KEY, transportMetadata);
@@ -51,5 +53,13 @@ public class MetadataServerTransportFilter extends ServerTransportFilter {
         if (logger.isDebugEnabled()) {
             logger.debug("transportTerminated attributes={}", transportAttrs);
         }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("MetadataServerTransportFilter{");
+        sb.append("transportMetadataFactory=").append(transportMetadataFactory);
+        sb.append('}');
+        return sb.toString();
     }
 }

@@ -16,13 +16,13 @@
 
 package com.navercorp.pinpoint.grpc.server;
 
+import com.navercorp.pinpoint.common.trace.ServiceType;
 import com.navercorp.pinpoint.grpc.Header;
 import com.navercorp.pinpoint.grpc.HeaderReader;
 import io.grpc.Metadata;
+import io.grpc.StatusRuntimeException;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Woonduk Kang(emeroad)
@@ -33,6 +33,7 @@ public class AgentHeaderReaderTest {
     private static final String APPLICATION_NAME = "applicationName";
     private static final long AGENT_START_TIME = System.currentTimeMillis();
     private static final long SOCKET_ID = 1001;
+    private static final int SERVICE_TYPE = ServiceType.STAND_ALONE.getCode();
 
     private HeaderReader<Header> reader = new AgentHeaderReader();
 
@@ -45,16 +46,17 @@ public class AgentHeaderReaderTest {
         Assert.assertEquals(header.getApplicationName(), APPLICATION_NAME);
         Assert.assertEquals(header.getAgentStartTime(), AGENT_START_TIME);
         Assert.assertEquals(header.getSocketId(), SOCKET_ID);
+        Assert.assertEquals(header.getServiceType(), SERVICE_TYPE);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = StatusRuntimeException.class)
     public void extract_fail_agentId() {
         Metadata metadata = newMetadata();
         metadata.put(Header.AGENT_ID_KEY, "!!agentId");
         reader.extract(metadata);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = StatusRuntimeException.class)
     public void extract_fail_applicationName() {
         Metadata metadata = newMetadata();
         metadata.put(Header.APPLICATION_NAME_KEY, "!!applicationName");
@@ -67,6 +69,7 @@ public class AgentHeaderReaderTest {
         metadata.put(Header.APPLICATION_NAME_KEY, APPLICATION_NAME);
         metadata.put(Header.AGENT_START_TIME_KEY, Long.toString(AGENT_START_TIME));
         metadata.put(Header.SOCKET_ID, Long.toString(SOCKET_ID));
+        metadata.put(Header.SERVICE_TYPE_KEY, Integer.toString(SERVICE_TYPE));
         return metadata;
     }
 }

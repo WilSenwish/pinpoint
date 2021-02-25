@@ -16,14 +16,22 @@
 
 package com.navercorp.pinpoint.grpc.server;
 
-import com.navercorp.pinpoint.common.util.Assert;
+import com.navercorp.pinpoint.common.trace.ServiceType;
 import com.navercorp.pinpoint.common.util.IdValidateUtils;
+import com.navercorp.pinpoint.common.util.StringUtils;
 import com.navercorp.pinpoint.grpc.Header;
 import com.navercorp.pinpoint.grpc.HeaderReader;
+
 import io.grpc.Metadata;
+import io.grpc.Status;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Woonduk Kang(emeroad)
+ * @author jaehong.kim
  */
 public class AgentHeaderReader implements HeaderReader<Header> {
 
@@ -32,21 +40,37 @@ public class AgentHeaderReader implements HeaderReader<Header> {
 
     @Override
     public Header extract(Metadata headers) {
-        String agentId = headers.get(Header.AGENT_ID_KEY);
-        String applicationName = headers.get(Header.APPLICATION_NAME_KEY);
-        final String agentStartTimeStr = headers.get(Header.AGENT_START_TIME_KEY);
-        Assert.requireNonNull(agentStartTimeStr, "agentStartTime must not be null");
-        // check number format
-        final long startTime = Long.parseLong(agentStartTimeStr);
-
+        final String agentId = getId(headers, Header.AGENT_ID_KEY);
+        final String applicationName = getId(headers, Header.APPLICATION_NAME_KEY);
+        final long startTime = getTime(headers, Header.AGENT_START_TIME_KEY);
+        final int serviceType = getServiceType(headers);
         final long socketId = getSocketId(headers);
-
-        agentId = validateId(agentId, "invalid agentId");
-        applicationName = validateId(applicationName, "invalid applicationName");
-        return new Header(agentId, applicationName, startTime, socketId);
+        final List<Integer> supportCommandCodeList = getSupportCommandCodeList(headers);
+        return new Header(agentId, applicationName, serviceType, startTime, socketId, supportCommandCodeList);
     }
 
-    private long getSocketId(Metadata headers) {
+    protected long getTime(Metadata headers, Metadata.Key<String> timeKey) {
+        final String timeStr = headers.get(timeKey);
+        if (timeStr == null) {
+            throw Status.INVALID_ARGUMENT.withDescription(timeKey.name() + " header is missing").asRuntimeException();
+        }
+        try {
+            // check number format
+            return Long.parseLong(timeStr);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("unsupported format");
+        }
+    }
+
+    protected String getId(Metadata headers, Metadata.Key<String> idKey) {
+        final String id = headers.get(idKey);
+        if (id == null) {
+            throw Status.INVALID_ARGUMENT.withDescription(idKey.name() + " header is missing").asRuntimeException();
+        }
+        return validateId(id, idKey);
+    }
+
+    protected long getSocketId(Metadata headers) {
         final String socketIdStr = headers.get(Header.SOCKET_ID);
         if (socketIdStr == null) {
             return Header.SOCKET_ID_NOT_EXIST;
@@ -58,13 +82,47 @@ public class AgentHeaderReader implements HeaderReader<Header> {
         }
     }
 
-    private String validateId(String id, String errorMessage) {
+    protected List<Integer> getSupportCommandCodeList(Metadata headers) {
+        List<Integer> supportCommandCodeList = new ArrayList<Integer>();
+
+        final String value = headers.get(Header.SUPPORT_COMMAND_CODE);
+        if (value == null) {
+            return Header.SUPPORT_COMMAND_CODE_LIST_NOT_EXIST;
+        }
+
+        final List<String> codeValueList = StringUtils.tokenizeToStringList(value, Header.SUPPORT_COMMAND_CODE_DELIMITER);
+        try {
+            for (String codeValue : codeValueList) {
+                if (StringUtils.isEmpty(codeValue)) {
+                    continue;
+                }
+
+                final String trimmedCodeValue = codeValue.trim();
+                final int code = Integer.parseInt(trimmedCodeValue);
+                supportCommandCodeList.add(code);
+            }
+            return Collections.unmodifiableList(supportCommandCodeList);
+        } catch (NumberFormatException e) {
+            return Header.SUPPORT_COMMAND_CODE_LIST_PARSE_ERROR;
+        }
+    }
+
+    private String validateId(String id, Metadata.Key key) {
         if (!IdValidateUtils.validateId(id)) {
-            throw new IllegalArgumentException(errorMessage);
+            throw Status.INVALID_ARGUMENT.withDescription("invalid " + key.name()).asRuntimeException();
         }
         return id;
     }
 
-
-
+    protected int getServiceType(Metadata headers) {
+        final String serviceTypeStr = headers.get(Header.SERVICE_TYPE_KEY);
+        if (serviceTypeStr == null) {
+            return ServiceType.UNDEFINED.getCode();
+        }
+        try {
+            return Integer.parseInt(serviceTypeStr);
+        } catch (NumberFormatException ignored) {
+            return ServiceType.UNDEFINED.getCode();
+        }
+    }
 }

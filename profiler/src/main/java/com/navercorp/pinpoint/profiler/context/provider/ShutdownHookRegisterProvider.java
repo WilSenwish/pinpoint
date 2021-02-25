@@ -50,8 +50,6 @@ public class ShutdownHookRegisterProvider implements Provider<ShutdownHookRegist
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    // Java6
-    private static final String JDK6_SHUTDOWN_HOOK_REGISTER = "com.navercorp.pinpoint.profiler.shutdown.Java6ShutdownHookRegister";
     // Java7,8
     private static final String JDK7_SHUTDOWN_HOOK_REGISTER = "com.navercorp.pinpoint.profiler.shutdown.Java7ShutdownHookRegister";
     // Java9,10,11
@@ -63,7 +61,7 @@ public class ShutdownHookRegisterProvider implements Provider<ShutdownHookRegist
 
     public ShutdownHookRegisterProvider(ProfilerConfig profilerConfig) {
         if (profilerConfig == null) {
-            throw new NullPointerException("profilerConfig must not be null");
+            throw new NullPointerException("profilerConfig");
         }
         vendorName = profilerConfig.getProfilerJvmVendorName();
     }
@@ -88,13 +86,6 @@ public class ShutdownHookRegisterProvider implements Provider<ShutdownHookRegist
         if (jvmVersion.onOrAfter(JvmVersion.JAVA_7)) {
             return JDK7_SHUTDOWN_HOOK_REGISTER;
         }
-
-        if (jvmVersion.onOrAfter(JvmVersion.JAVA_6)) {
-            if (jvmType == JvmType.ORACLE) {
-                return JDK6_SHUTDOWN_HOOK_REGISTER;
-            }
-        }
-
         return null;
     }
 

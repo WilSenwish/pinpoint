@@ -36,7 +36,6 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -53,7 +52,7 @@ public class HbaseAgentLifeCycleDaoTest {
     private HbaseOperations2 hbaseOperations2;
 
     @Spy
-    private TableNameProvider tableNameProvider = new TableNameProvider() {
+    private final TableNameProvider tableNameProvider = new TableNameProvider() {
 
         @Override
         public TableName getTableName(HbaseTable hBaseTable) {
@@ -170,7 +169,7 @@ public class HbaseAgentLifeCycleDaoTest {
         final AgentLifeCycleState expectedAgentLifeCycleState = AgentLifeCycleState.RUNNING;
 
         final AgentLifeCycleBo scannedLifeCycleBo = createAgentLifeCycleBo(expectedAgentId, expectedTimestamp, expectedAgentLifeCycleState);
-        when(this.hbaseOperations2.findParallel(any(TableName.class), anyListOf(Scan.class), any(ResultsExtractor.class))).thenReturn(Arrays.asList(scannedLifeCycleBo, scannedLifeCycleBo));
+        when(this.hbaseOperations2.findParallel(any(TableName.class), anyList(), any(ResultsExtractor.class))).thenReturn(Arrays.asList(scannedLifeCycleBo, scannedLifeCycleBo));
 
         AgentInfo nonNullAgentInfo = new AgentInfo();
         nonNullAgentInfo.setAgentId(expectedAgentId);
@@ -188,6 +187,12 @@ public class HbaseAgentLifeCycleDaoTest {
         Assert.assertEquals(expectedAgentId, nonNullAgentInfoStatus.getAgentId());
         Assert.assertEquals(expectedTimestamp, nonNullAgentInfoStatus.getEventTimestamp());
         Assert.assertEquals(expectedAgentLifeCycleState, nonNullAgentInfoStatus.getState());
+    }
+
+    @Test
+    public void populateAgentStatus_should_not_crash_with_invalid_inputs() {
+        this.agentLifeCycleDao.populateAgentStatus(null, 1000L);
+        this.agentLifeCycleDao.populateAgentStatuses(Arrays.asList(), 1000L);
     }
 
     private AgentLifeCycleBo createAgentLifeCycleBo(String agentId, long eventTimestamp, AgentLifeCycleState state) {

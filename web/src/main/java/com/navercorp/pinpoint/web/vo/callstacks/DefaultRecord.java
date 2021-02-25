@@ -23,7 +23,10 @@ import com.navercorp.pinpoint.common.trace.ServiceType;
  * @author jaehong.kim
  */
 public class DefaultRecord extends BaseRecord {
-    public DefaultRecord(int tab, int id, int parentId, boolean method, String title, String arguments, long begin, long elapsed, long gap, String agent, String applicationName, ServiceType serviceType, String destinationId, boolean hasChild, boolean hasException, String transactionId, long spanId, long executionMilliseconds, MethodTypeEnum methodTypeEnum, boolean isAuthorized) {
+    public DefaultRecord(int tab, int id, int parentId, boolean method, String title, String arguments,
+                         long begin, long elapsed, long gap, String agent, String applicationName, ServiceType serviceType,
+                         String destinationId, boolean hasChild, boolean hasException, String transactionId, long spanId,
+                         long executionMilliseconds, MethodTypeEnum methodTypeEnum, boolean isAuthorized) {
         this.tab = tab;
         this.id = id;
         this.parentId = parentId;

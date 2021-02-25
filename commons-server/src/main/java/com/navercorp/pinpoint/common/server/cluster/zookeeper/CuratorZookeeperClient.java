@@ -21,7 +21,6 @@ import com.navercorp.pinpoint.common.server.cluster.zookeeper.exception.Pinpoint
 import com.navercorp.pinpoint.common.server.util.concurrent.CommonStateContext;
 import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.common.util.StringUtils;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.utils.ZKPaths;
@@ -34,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Taejin Koo
@@ -49,7 +49,7 @@ public class CuratorZookeeperClient implements ZookeeperClient {
     private final CuratorZookeeperConnectionManager connectionManager;
 
     public CuratorZookeeperClient(String hostPort, int sessionTimeout, ZookeeperEventWatcher zookeeperEventWatcher) {
-        this.zookeeperEventWatcher = Assert.requireNonNull(zookeeperEventWatcher, "zookeeperEventWatcher must not be null");
+        this.zookeeperEventWatcher = Objects.requireNonNull(zookeeperEventWatcher, "zookeeperEventWatcher");
 
         this.connectionManager = new CuratorZookeeperConnectionManager(hostPort, sessionTimeout, zookeeperEventWatcher);
     }

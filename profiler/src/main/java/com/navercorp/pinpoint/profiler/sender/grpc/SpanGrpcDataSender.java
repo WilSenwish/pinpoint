@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,21 +17,22 @@
 package com.navercorp.pinpoint.profiler.sender.grpc;
 
 
-import com.navercorp.pinpoint.common.util.Assert;
-import com.navercorp.pinpoint.grpc.client.ChannelFactoryOption;
-
 import com.google.protobuf.Empty;
-
+import com.google.protobuf.GeneratedMessageV3;
+import java.util.Objects;
+import com.navercorp.pinpoint.grpc.client.ChannelFactory;
 import com.navercorp.pinpoint.grpc.trace.PSpan;
 import com.navercorp.pinpoint.grpc.trace.PSpanChunk;
 import com.navercorp.pinpoint.grpc.trace.PSpanMessage;
 import com.navercorp.pinpoint.grpc.trace.SpanGrpc;
 import com.navercorp.pinpoint.profiler.context.thrift.MessageConverter;
-
-import com.google.protobuf.GeneratedMessageV3;
-import io.grpc.stub.StreamObserver;
-
-import java.util.concurrent.RejectedExecutionException;
+import com.navercorp.pinpoint.profiler.sender.grpc.stream.ClientStreamingProvider;
+import com.navercorp.pinpoint.profiler.sender.grpc.stream.DefaultStreamTask;
+import com.navercorp.pinpoint.profiler.sender.grpc.stream.StreamExecutorFactory;
+import com.navercorp.pinpoint.profiler.util.NamedRunnable;
+import io.grpc.ConnectivityState;
+import io.grpc.ManagedChannel;
+import io.grpc.stub.ClientCallStreamObserver;
 
 import static com.navercorp.pinpoint.grpc.MessageFormatUtils.debugLog;
 
@@ -39,79 +40,89 @@ import static com.navercorp.pinpoint.grpc.MessageFormatUtils.debugLog;
  * @author jaehong.kim
  */
 public class SpanGrpcDataSender extends GrpcDataSender {
-    private final SpanGrpc.SpanStub spanStub;
+
     private final ReconnectExecutor reconnectExecutor;
 
-    private volatile StreamObserver<PSpanMessage> spanStream;
-    private final Reconnector spanStreamReconnector;
+    private final Reconnector reconnector;
+    private final StreamState failState;
+    private final StreamExecutorFactory<PSpanMessage> streamExecutorFactory;
+    private final String id = "SpanStream";
+
+    private volatile StreamTask<PSpanMessage> currentStreamTask;
+
+    private final ClientStreamingService<PSpanMessage, Empty> clientStreamService;
+
+    public final MessageDispatcher<PSpanMessage> dispatcher = new MessageDispatcher<PSpanMessage>() {
+        @Override
+        public void onDispatch(ClientCallStreamObserver<PSpanMessage> stream, Object data) {
+            final GeneratedMessageV3 message = messageConverter.toMessage(data);
+            if (isDebug) {
+                logger.debug("Send message={}", debugLog(message));
+            }
+            if (message instanceof PSpanChunk) {
+                final PSpanChunk spanChunk = (PSpanChunk) message;
+                final PSpanMessage spanMessage = PSpanMessage.newBuilder().setSpanChunk(spanChunk).build();
+                stream.onNext(spanMessage);
+                return;
+            }
+            if (message instanceof PSpan) {
+                final PSpan pSpan = (PSpan) message;
+                final PSpanMessage spanMessage = PSpanMessage.newBuilder().setSpan(pSpan).build();
+                stream.onNext(spanMessage);
+                return;
+            }
+            throw new IllegalStateException("unsupported message " + data);
+        }
+    };
+
 
     public SpanGrpcDataSender(String host, int port,
                               int executorQueueSize,
                               MessageConverter<GeneratedMessageV3> messageConverter,
                               ReconnectExecutor reconnectExecutor,
-                              ChannelFactoryOption channelFactoryOption) {
-        super(host, port, executorQueueSize, messageConverter, channelFactoryOption);
+                              ChannelFactory channelFactory,
+                              StreamState failState) {
+        super(host, port, executorQueueSize, messageConverter, channelFactory);
 
-        this.spanStub = SpanGrpc.newStub(managedChannel);
-        this.reconnectExecutor = Assert.requireNonNull(reconnectExecutor, "reconnectExecutor must not be null");
-        {
-            final Runnable spanStreamReconnectJob = new Runnable() {
-                @Override
-                public void run() {
-                    spanStream = newSpanStream();
-                }
-            };
-            this.spanStreamReconnector = reconnectExecutor.newReconnector(spanStreamReconnectJob);
-            this.spanStream = newSpanStream();
-        }
-    }
-
-    private StreamObserver<PSpanMessage> newSpanStream() {
-        StreamId spanId = StreamId.newStreamId("SpanStream");
-        ResponseStreamObserver<PSpanMessage, Empty> responseStreamObserver = new ResponseStreamObserver<PSpanMessage, Empty>(spanId, spanStreamReconnector);
-        return spanStub.sendSpan(responseStreamObserver);
-    }
-
-    @Override
-    public boolean send(final Object data) {
-        final Runnable command = new Runnable() {
+        this.reconnectExecutor = Objects.requireNonNull(reconnectExecutor, "reconnectExecutor");
+        final Runnable reconnectJob = new NamedRunnable(this.id) {
             @Override
             public void run() {
-                try {
-                    send0(data);
-                } catch (Exception ex) {
-                    logger.debug("send fail:{}", data, ex);
-                }
+                startStream();
             }
         };
-        try {
-            executor.execute(command);
-        } catch (RejectedExecutionException reject) {
-            logger.debug("reject:{}", command);
-            return false;
-        }
-        return true;
+        this.reconnector = reconnectExecutor.newReconnector(reconnectJob);
+        this.failState = Objects.requireNonNull(failState, "failState");
+        this.streamExecutorFactory = new StreamExecutorFactory<PSpanMessage>(executor);
+
+        ClientStreamingProvider<PSpanMessage, Empty> clientStreamProvider = new ClientStreamingProvider<PSpanMessage, Empty>() {
+            @Override
+            public ClientCallStreamObserver<PSpanMessage> newStream(ResponseStreamObserver<PSpanMessage, Empty> response) {
+                final ManagedChannel managedChannel = SpanGrpcDataSender.this.managedChannel;
+                String authority = managedChannel.authority();
+                final ConnectivityState state = managedChannel.getState(false);
+                SpanGrpcDataSender.this.logger.info("newStream {}/{} state:{} isShutdown:{} isTerminated:{}", id, authority, state, managedChannel.isShutdown(), managedChannel.isTerminated());
+
+                SpanGrpc.SpanStub spanStub = SpanGrpc.newStub(managedChannel);
+                return (ClientCallStreamObserver<PSpanMessage>) spanStub.sendSpan(response);
+            }
+
+        };
+        this.clientStreamService = new ClientStreamingService<PSpanMessage, Empty>(clientStreamProvider, reconnector);
+        reconnectJob.run();
     }
 
-    private boolean send0(Object data) {
-        final GeneratedMessageV3 message = messageConverter.toMessage(data);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Send message={}", debugLog(message));
+    private void startStream() {
+        try {
+            StreamTask<PSpanMessage> streamTask = new DefaultStreamTask<PSpanMessage, Empty>(id, clientStreamService,
+                    this.streamExecutorFactory, this.queue, this.dispatcher, failState);
+            streamTask.start();
+            this.currentStreamTask = streamTask;
+        } catch (Throwable th) {
+            logger.error("startStream error", th);
         }
-        if (message instanceof PSpanChunk) {
-            final PSpanChunk spanChunk = (PSpanChunk) message;
-            final PSpanMessage spanMessage = PSpanMessage.newBuilder().setSpanChunk(spanChunk).build();
-            spanStream.onNext(spanMessage);
-            return true;
-        }
-        if (message instanceof PSpan) {
-            final PSpan pSpan = (PSpan) message;
-            final PSpanMessage spanMessage = PSpanMessage.newBuilder().setSpan(pSpan).build();
-            spanStream.onNext(spanMessage);
-            return true;
-        }
-        throw new IllegalStateException("unsupported message " + data);
     }
+
 
     @Override
     public void stop() {
@@ -125,8 +136,13 @@ public class SpanGrpcDataSender extends GrpcDataSender {
         if (reconnectExecutor != null) {
             reconnectExecutor.close();
         }
-        logger.info("{} close()", this.spanStream);
-        StreamUtils.close(this.spanStream);
+
+        final StreamTask<PSpanMessage> currentStreamTask = this.currentStreamTask;
+        if (currentStreamTask != null) {
+            currentStreamTask.stop();
+        }
+        logger.info("{} close()", id);
+//        StreamUtils.close(this.stream);
         release();
     }
 
@@ -138,4 +154,5 @@ public class SpanGrpcDataSender extends GrpcDataSender {
                 ", port=" + port +
                 "} " + super.toString();
     }
+
 }

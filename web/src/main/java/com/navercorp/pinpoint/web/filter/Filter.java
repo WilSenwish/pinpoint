@@ -16,8 +16,6 @@
 
 package com.navercorp.pinpoint.web.filter;
 
-import java.util.List;
-
 /**
  *
  * @author netspider
@@ -29,7 +27,7 @@ public interface Filter<T> {
 
     Filter NONE = new Filter() {
         @Override
-        public boolean include(List transaction) {
+        public boolean include(Object t) {
             return ACCEPT;
         }
     };
@@ -40,5 +38,5 @@ public interface Filter<T> {
         return none;
     }
 
-    boolean include(List<T> transaction);
+    boolean include(T transaction);
 }

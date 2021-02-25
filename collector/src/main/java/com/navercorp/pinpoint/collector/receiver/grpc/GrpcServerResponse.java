@@ -28,15 +28,19 @@ public class GrpcServerResponse<T> implements ServerResponse<T> {
     private final StreamObserver<T> responseObserver;
 
     public GrpcServerResponse(StreamObserver<T> responseObserver) {
-        this.responseObserver = Objects.requireNonNull(responseObserver, "responseObserver must not be null");
+        this.responseObserver = Objects.requireNonNull(responseObserver, "responseObserver");
     }
 
     @Override
     public void write(final T message) {
-        if (message == null) {
-            throw new NullPointerException("message must not be null");
-        }
+        Objects.requireNonNull(message, "message");
+
         responseObserver.onNext(message);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void finish() {
         responseObserver.onCompleted();
     }
 }

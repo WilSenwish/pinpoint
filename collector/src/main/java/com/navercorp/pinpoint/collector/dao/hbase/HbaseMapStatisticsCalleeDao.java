@@ -1,11 +1,11 @@
 /*
- * Copyright 2014 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,20 @@ package com.navercorp.pinpoint.collector.dao.hbase;
 
 import com.navercorp.pinpoint.collector.dao.MapStatisticsCalleeDao;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.BulkIncrementer;
+import com.navercorp.pinpoint.collector.dao.hbase.statistics.BulkUpdater;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.CallRowKey;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.CallerColumnName;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.ColumnName;
+import com.navercorp.pinpoint.collector.dao.hbase.statistics.RowInfo;
 import com.navercorp.pinpoint.collector.dao.hbase.statistics.RowKey;
 import com.navercorp.pinpoint.common.hbase.HbaseColumnFamily;
 import com.navercorp.pinpoint.common.hbase.HbaseOperations2;
 import com.navercorp.pinpoint.common.hbase.TableDescriptor;
 import com.navercorp.pinpoint.common.server.util.AcceptedTimeService;
+import com.navercorp.pinpoint.common.trace.HistogramSchema;
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.common.util.ApplicationMapStatisticsUtils;
-import com.navercorp.pinpoint.common.util.TimeSlot;
+import com.navercorp.pinpoint.common.profiler.util.ApplicationMapStatisticsUtils;
+import com.navercorp.pinpoint.common.server.util.TimeSlot;
 
 import com.sematext.hbase.wd.RowKeyDistributorByHashPrefix;
 import org.apache.commons.lang3.StringUtils;
@@ -42,10 +45,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Update statistics of callee node
- * 
+ *
  * @author netspider
  * @author emeroad
  * @author HyunGil Jeong
@@ -55,44 +59,57 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    @Autowired
-    private HbaseOperations2 hbaseTemplate;
+    private final HbaseOperations2 hbaseTemplate;
 
-    @Autowired
-    private AcceptedTimeService acceptedTimeService;
+    private final TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor;
 
-    @Autowired
-    private TimeSlot timeSlot;
+    private final AcceptedTimeService acceptedTimeService;
 
-    @Autowired
-    @Qualifier("calleeBulkIncrementer")
-    private BulkIncrementer bulkIncrementer;
+    private final TimeSlot timeSlot;
 
-    @Autowired
-    @Qualifier("statisticsCalleeRowKeyDistributor")
-    private RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix;
+    private final BulkIncrementer bulkIncrementer;
+    private final BulkUpdater bulkUpdater;
+
+    private final RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix;
 
     private final boolean useBulk;
 
-    @Autowired
-    private TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor;
+    private final IgnoreStatFilter ignoreStatFilter;
 
-    public HbaseMapStatisticsCalleeDao() {
-        this(true);
+
+    @Autowired
+    public HbaseMapStatisticsCalleeDao(IgnoreStatFilter ignoreStatFilter,
+                                       HbaseOperations2 hbaseTemplate,
+                                       TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor,
+                                       @Qualifier("statisticsCalleeRowKeyDistributor") RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix,
+                                       AcceptedTimeService acceptedTimeService, TimeSlot timeSlot,
+                                       @Qualifier("calleeBulkIncrementer") BulkIncrementer bulkIncrementer,
+                                       @Qualifier("calleeBulkUpdater") BulkUpdater bulkUpdater) {
+        this(ignoreStatFilter, hbaseTemplate, descriptor, rowKeyDistributorByHashPrefix,
+                acceptedTimeService, timeSlot,
+                bulkIncrementer, bulkUpdater, true);
     }
 
-    public HbaseMapStatisticsCalleeDao(boolean useBulk) {
+    public HbaseMapStatisticsCalleeDao(IgnoreStatFilter ignoreStatFilter, HbaseOperations2 hbaseTemplate,
+                                       TableDescriptor<HbaseColumnFamily.CallerStatMap> descriptor,
+                                       RowKeyDistributorByHashPrefix rowKeyDistributorByHashPrefix,
+                                       AcceptedTimeService acceptedTimeService, TimeSlot timeSlot,
+                                       BulkIncrementer bulkIncrementer, BulkUpdater bulkUpdater, boolean useBulk) {
+        this.ignoreStatFilter = Objects.requireNonNull(ignoreStatFilter, "ignoreStatFilter");
+        this.hbaseTemplate = Objects.requireNonNull(hbaseTemplate, "hbaseTemplate");
+        this.descriptor = Objects.requireNonNull(descriptor, "descriptor");
+        this.rowKeyDistributorByHashPrefix = Objects.requireNonNull(rowKeyDistributorByHashPrefix, "rowKeyDistributorByHashPrefix");
+        this.acceptedTimeService = Objects.requireNonNull(acceptedTimeService, "acceptedTimeService");
+        this.timeSlot = Objects.requireNonNull(timeSlot, "timeSlot");
+        this.bulkIncrementer = Objects.requireNonNull(bulkIncrementer, "bulkIncrementer");
+        this.bulkUpdater = Objects.requireNonNull(bulkUpdater, "bulkUpdater");
         this.useBulk = useBulk;
     }
 
     @Override
     public void update(String calleeApplicationName, ServiceType calleeServiceType, String callerApplicationName, ServiceType callerServiceType, String callerHost, int elapsed, boolean isError) {
-        if (callerApplicationName == null) {
-            throw new NullPointerException("callerApplicationName must not be null");
-        }
-        if (calleeApplicationName == null) {
-            throw new NullPointerException("calleeApplicationName must not be null");
-        }
+        Objects.requireNonNull(calleeApplicationName, "calleeApplicationName");
+        Objects.requireNonNull(callerApplicationName, "callerApplicationName");
 
         if (logger.isDebugEnabled()) {
             logger.debug("[Callee] {} ({}) <- {} ({})[{}]",
@@ -102,6 +119,13 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
         // there may be no endpoint in case of httpclient
         callerHost = StringUtils.defaultString(callerHost);
 
+        // TODO callee, caller parameter normalization
+        if (ignoreStatFilter.filter(calleeServiceType, callerHost)) {
+            logger.debug("[Ignore-Callee] {} ({}) <- {} ({})[{}]",
+                    calleeApplicationName, calleeServiceType, callerApplicationName, callerServiceType, callerHost);
+            return;
+        }
+
         // make row key. rowkey is me
         final long acceptedTime = acceptedTimeService.getAcceptedTime();
         final long rowTimeSlot = timeSlot.getTimeSlot(acceptedTime);
@@ -110,27 +134,39 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
         final short callerSlotNumber = ApplicationMapStatisticsUtils.getSlotNumber(calleeServiceType, elapsed, isError);
         final ColumnName callerColumnName = new CallerColumnName(callerServiceType.getCode(), callerApplicationName, callerHost, callerSlotNumber);
 
+        HistogramSchema histogramSchema = calleeServiceType.getHistogramSchema();
+        final ColumnName sumColumnName = new CallerColumnName(callerServiceType.getCode(), callerApplicationName, callerHost, histogramSchema.getSumStatSlot().getSlotTime());
+        final ColumnName maxColumnName = new CallerColumnName(callerServiceType.getCode(), callerApplicationName, callerHost, histogramSchema.getMaxStatSlot().getSlotTime());
+
         if (useBulk) {
             TableName mapStatisticsCallerTableName = descriptor.getTableName();
             bulkIncrementer.increment(mapStatisticsCallerTableName, calleeRowKey, callerColumnName);
+            bulkIncrementer.increment(mapStatisticsCallerTableName, calleeRowKey, sumColumnName, elapsed);
+            bulkUpdater.updateMax(mapStatisticsCallerTableName, calleeRowKey, maxColumnName, elapsed);
         } else {
             final byte[] rowKey = getDistributedKey(calleeRowKey.getRowKey());
 
             // column name is the name of caller app.
             byte[] columnName = callerColumnName.getColumnName();
             increment(rowKey, columnName, 1L);
+            increment(rowKey, sumColumnName.getColumnName(), elapsed);
+            checkAndMax(rowKey, maxColumnName.getColumnName(), elapsed);
         }
     }
 
     private void increment(byte[] rowKey, byte[] columnName, long increment) {
-        if (rowKey == null) {
-            throw new NullPointerException("rowKey must not be null");
-        }
-        if (columnName == null) {
-            throw new NullPointerException("columnName must not be null");
-        }
+        Objects.requireNonNull(rowKey, "rowKey");
+        Objects.requireNonNull(columnName, "columnName");
+
         TableName mapStatisticsCallerTableName = descriptor.getTableName();
         hbaseTemplate.incrementColumnValue(mapStatisticsCallerTableName, rowKey, descriptor.getColumnFamilyName(), columnName, increment);
+    }
+
+    private void checkAndMax(byte[] rowKey, byte[] columnName, long value) {
+        Objects.requireNonNull(rowKey, "rowKey");
+        Objects.requireNonNull(columnName, "columnName");
+
+        hbaseTemplate.maxColumnValue(descriptor.getTableName(), rowKey, descriptor.getColumnFamilyName(), columnName, value);
     }
 
     @Override
@@ -150,6 +186,12 @@ public class HbaseMapStatisticsCalleeDao implements MapStatisticsCalleeDao {
             hbaseTemplate.increment(tableName, increments);
         }
 
+        Map<RowInfo, Long> maxUpdateMap = bulkUpdater.getMaxUpdate();
+        for (RowInfo rowInfo : maxUpdateMap.keySet()) {
+            Long val = maxUpdateMap.get(rowInfo);
+            final byte[] rowKey = getDistributedKey(rowInfo.getRowKey().getRowKey());
+            checkAndMax(rowKey, rowInfo.getColumnName().getColumnName(), val);
+        }
     }
 
     private byte[] getDistributedKey(byte[] rowKey) {

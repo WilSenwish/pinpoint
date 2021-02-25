@@ -16,6 +16,7 @@
 
 package com.navercorp.pinpoint.profiler.monitor.collector.jvmgc;
 
+import java.util.Objects;
 import com.navercorp.pinpoint.profiler.monitor.collector.AgentStatMetricCollector;
 import com.navercorp.pinpoint.profiler.monitor.metric.JvmGcDetailedMetricSnapshot;
 import com.navercorp.pinpoint.profiler.monitor.metric.JvmGcMetricSnapshot;
@@ -38,19 +39,11 @@ public class DetailedJvmGcMetricCollector implements AgentStatMetricCollector<Jv
             BasicJvmGcMetricCollector jvmGcMetricCollector,
             DetailedMemoryMetric detailedMemoryMetric,
             DetailedGarbageCollectorMetric detailedGarbageCollectorMetric) {
-        if (jvmGcMetricCollector == null) {
-            throw new NullPointerException("jvmGcMetricCollector must not be null");
-        }
-        if (detailedMemoryMetric == null) {
-            throw new NullPointerException("detailedMemoryMetric must not be null");
-        }
-        if (detailedGarbageCollectorMetric == null) {
-            throw new NullPointerException("detailedGarbageCollectorMetric must not be null");
-        }
-        this.jvmGcMetricCollector = jvmGcMetricCollector;
-        this.detailedMemoryMetric = detailedMemoryMetric;
-        this.detailedGarbageCollectorMetric = detailedGarbageCollectorMetric;
+        this.jvmGcMetricCollector = Objects.requireNonNull(jvmGcMetricCollector, "jvmGcMetricCollector");
+        this.detailedMemoryMetric = Objects.requireNonNull(detailedMemoryMetric, "detailedMemoryMetric");
+        this.detailedGarbageCollectorMetric = Objects.requireNonNull(detailedGarbageCollectorMetric, "detailedGarbageCollectorMetric");
     }
+
 
     @Override
     public JvmGcMetricSnapshot collect() {

@@ -17,6 +17,7 @@
 package com.navercorp.pinpoint.web.vo.stat;
 
 import com.navercorp.pinpoint.web.vo.chart.Point;
+import com.navercorp.pinpoint.web.vo.chart.UncollectedPointCreatorFactory;
 import com.navercorp.pinpoint.web.vo.stat.chart.agent.AgentStatPoint;
 
 import java.util.Objects;
@@ -27,12 +28,7 @@ import java.util.Objects;
 public class SampledDirectBuffer implements SampledAgentStatDataPoint {
 
     public static final Long UNCOLLECTED_VALUE = -1L;
-    public static final Point.UncollectedPointCreator<AgentStatPoint<Long>> UNCOLLECTED_POINT_CREATOR = new Point.UncollectedPointCreator<AgentStatPoint<Long>>() {
-        @Override
-        public AgentStatPoint<Long> createUnCollectedPoint(long xVal) {
-            return new AgentStatPoint<>(xVal, UNCOLLECTED_VALUE);
-        }
-    };
+    public static final Point.UncollectedPointCreator<AgentStatPoint<Long>> UNCOLLECTED_POINT_CREATOR = UncollectedPointCreatorFactory.createLongPointCreator(UNCOLLECTED_VALUE);
 
     private final AgentStatPoint<Long> directCount;
     private final AgentStatPoint<Long> directMemoryUsed;
@@ -40,10 +36,10 @@ public class SampledDirectBuffer implements SampledAgentStatDataPoint {
     private final AgentStatPoint<Long> mappedMemoryUsed;
 
     public SampledDirectBuffer(AgentStatPoint<Long> directCount, AgentStatPoint<Long> directMemoryUsed, AgentStatPoint<Long> mappedCount, AgentStatPoint<Long> mappedMemoryUsed) {
-        this.directCount = Objects.requireNonNull(directCount, "directCount must not be null");
-        this.directMemoryUsed = Objects.requireNonNull(directMemoryUsed, "directMemoryUsed must not be null");
-        this.mappedCount = Objects.requireNonNull(mappedCount, "mappedCount must not be null");
-        this.mappedMemoryUsed = Objects.requireNonNull(mappedMemoryUsed, "mappedMemoryUsed must not be null");
+        this.directCount = Objects.requireNonNull(directCount, "directCount");
+        this.directMemoryUsed = Objects.requireNonNull(directMemoryUsed, "directMemoryUsed");
+        this.mappedCount = Objects.requireNonNull(mappedCount, "mappedCount");
+        this.mappedMemoryUsed = Objects.requireNonNull(mappedMemoryUsed, "mappedMemoryUsed");
     }
     public AgentStatPoint<Long> getDirectCount() {
         return directCount;

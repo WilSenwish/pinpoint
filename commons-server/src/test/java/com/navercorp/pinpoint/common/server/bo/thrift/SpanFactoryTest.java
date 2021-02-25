@@ -16,15 +16,14 @@
 
 package com.navercorp.pinpoint.common.server.bo.thrift;
 
-import com.google.common.collect.Lists;
 import com.navercorp.pinpoint.common.server.bo.LocalAsyncIdBo;
 import com.navercorp.pinpoint.common.server.bo.RandomTSpan;
 import com.navercorp.pinpoint.common.server.bo.SpanBo;
 import com.navercorp.pinpoint.common.server.bo.SpanChunkBo;
 import com.navercorp.pinpoint.common.server.bo.SpanEventBo;
 import com.navercorp.pinpoint.common.server.bo.SpanFactoryAssert;
-import com.navercorp.pinpoint.common.util.TransactionId;
-import com.navercorp.pinpoint.common.util.TransactionIdUtils;
+import com.navercorp.pinpoint.common.profiler.util.TransactionId;
+import com.navercorp.pinpoint.common.profiler.util.TransactionIdUtils;
 import com.navercorp.pinpoint.thrift.dto.TSpan;
 import com.navercorp.pinpoint.thrift.dto.TSpanChunk;
 import com.navercorp.pinpoint.thrift.dto.TSpanEvent;
@@ -108,7 +107,7 @@ public class SpanFactoryTest {
         TSpanEvent tSpanEvent2 = random.randomTSpanEvent((short)1);
         TSpanEvent tSpanEvent3 = random.randomTSpanEvent((short)5);
         TSpanEvent tSpanEvent4 = random.randomTSpanEvent((short)2);
-        tSpan.setSpanEventList(Lists.newArrayList(tSpanEvent1, tSpanEvent2, tSpanEvent3, tSpanEvent4));
+        tSpan.setSpanEventList(Arrays.asList(tSpanEvent1, tSpanEvent2, tSpanEvent3, tSpanEvent4));
 
         SpanBo spanBo = spanFactory.buildSpanBo(tSpan);
 
@@ -131,7 +130,7 @@ public class SpanFactoryTest {
         TSpanEvent tSpanEvent2 = random.randomTSpanEvent((short)1);
         TSpanEvent tSpanEvent3 = random.randomTSpanEvent((short)5);
         TSpanEvent tSpanEvent4 = random.randomTSpanEvent((short)2);
-        tSpanChunk.setSpanEventList(Lists.newArrayList(tSpanEvent1, tSpanEvent2, tSpanEvent3, tSpanEvent4));
+        tSpanChunk.setSpanEventList(Arrays.asList(tSpanEvent1, tSpanEvent2, tSpanEvent3, tSpanEvent4));
 
         SpanChunkBo spanChunkBo = spanFactory.buildSpanChunkBo(tSpanChunk);
 

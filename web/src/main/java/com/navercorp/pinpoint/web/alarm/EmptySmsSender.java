@@ -18,16 +18,18 @@ package com.navercorp.pinpoint.web.alarm;
 import com.navercorp.pinpoint.web.alarm.checker.AlarmChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.StepExecution;
 
 /**
  * @author minwoo.jung
  */
+@Deprecated
 public class EmptySmsSender implements SmsSender {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public void sendSms(AlarmChecker checker, int sequenceCount) {
+    public void sendSms(AlarmChecker checker, int sequenceCount, StepExecution stepExecution) {
         logger.info("can not send sms message.");
     }
 }

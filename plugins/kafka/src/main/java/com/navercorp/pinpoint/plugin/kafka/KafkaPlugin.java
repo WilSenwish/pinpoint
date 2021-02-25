@@ -32,13 +32,21 @@ import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPlugin;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPluginSetupContext;
 import com.navercorp.pinpoint.common.util.StringUtils;
+import com.navercorp.pinpoint.plugin.kafka.field.accessor.EndPointFieldAccessor;
 import com.navercorp.pinpoint.plugin.kafka.field.accessor.RemoteAddressFieldAccessor;
+import com.navercorp.pinpoint.plugin.kafka.field.accessor.SocketChannelListFieldAccessor;
+import com.navercorp.pinpoint.plugin.kafka.field.getter.ApiVersionsGetter;
+import com.navercorp.pinpoint.plugin.kafka.field.getter.SelectorGetter;
 import com.navercorp.pinpoint.plugin.kafka.interceptor.ConsumerConstructorInterceptor;
 import com.navercorp.pinpoint.plugin.kafka.interceptor.ConsumerMultiRecordEntryPointInterceptor;
 import com.navercorp.pinpoint.plugin.kafka.interceptor.ConsumerPollInterceptor;
 import com.navercorp.pinpoint.plugin.kafka.interceptor.ConsumerRecordEntryPointInterceptor;
+import com.navercorp.pinpoint.plugin.kafka.interceptor.ConsumerRecordsInterceptor;
+import com.navercorp.pinpoint.plugin.kafka.interceptor.ProducerAddHeaderInterceptor;
+import com.navercorp.pinpoint.plugin.kafka.interceptor.NetworkClientPollInterceptor;
 import com.navercorp.pinpoint.plugin.kafka.interceptor.ProducerConstructorInterceptor;
 import com.navercorp.pinpoint.plugin.kafka.interceptor.ProducerSendInterceptor;
+import com.navercorp.pinpoint.plugin.kafka.interceptor.SocketChannelRegisterInterceptor;
 
 import java.security.ProtectionDomain;
 import java.util.List;
@@ -47,6 +55,7 @@ import static com.navercorp.pinpoint.common.util.VarArgs.va;
 
 /**
  * @author Harris Gwag (gwagdalf)
+ * @author Taejin Koo
  */
 public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
 
@@ -69,12 +78,25 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
 
             transformTemplate.transform("org.apache.kafka.clients.consumer.ConsumerRecord", ConsumerRecordTransform.class);
 
+            // for getting local addresses
+            transformTemplate.transform("org.apache.kafka.common.network.Selector", KafkaSelectorTransform.class);
+            transformTemplate.transform("org.apache.kafka.clients.NetworkClient", NetworkClientTransform.class);
+            transformTemplate.transform("org.apache.kafka.common.TopicPartition", TopicPartitionTransform.class);
+            transformTemplate.transform("org.apache.kafka.clients.consumer.ConsumerRecords", ConsumerRecordsTransform.class);
+
             if (config.isSpringConsumerEnable()) {
                 transformTemplate.transform("org.springframework.kafka.listener.adapter.RecordMessagingMessageListenerAdapter", AcknowledgingConsumerAwareMessageListenerTransform.class);
                 transformTemplate.transform("org.springframework.kafka.listener.adapter.BatchMessagingMessageListenerAdapter", BatchMessagingMessageListenerAdapterTransform.class);
 
                 // Spring Cloud Starter Stream Kafka 2.2.x is supported
                 transformTemplate.transform("org.springframework.kafka.listener.adapter.RetryingMessageListenerAdapter", AcknowledgingConsumerAwareMessageListenerTransform.class);
+
+                // for MessagingGatewaySupport in spring-integration-kafka
+                transformTemplate.transform("org.springframework.integration.kafka.inbound.KafkaInboundGateway$IntegrationRecordMessageListener", AcknowledgingConsumerAwareMessageListenerTransform.class);
+
+                // for MessageProducerSupport in spring-integration-kafka
+                transformTemplate.transform("org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter$IntegrationRecordMessageListener", AcknowledgingConsumerAwareMessageListenerTransform.class);
+                transformTemplate.transform("org.springframework.integration.kafka.inbound.KafkaMessageDrivenChannelAdapter$IntegrationBatchMessageListener", BatchMessagingMessageListenerAdapterTransform.class);
             }
 
             if (StringUtils.hasText(config.getKafkaEntryPoint())) {
@@ -89,8 +111,19 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
         public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
             final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
 
-            InstrumentMethod constructor = target.getConstructor("org.apache.kafka.clients.producer.ProducerConfig",
-                    "org.apache.kafka.common.serialization.Serializer", "org.apache.kafka.common.serialization.Serializer");
+            // Version 2.3.0+ is supported.
+            InstrumentMethod constructor = target.getConstructor("java.util.Map",
+                    "org.apache.kafka.common.serialization.Serializer", "org.apache.kafka.common.serialization.Serializer",
+                    "org.apache.kafka.clients.producer.internals.ProducerMetadata", "org.apache.kafka.clients.KafkaClient",
+                    "org.apache.kafka.clients.producer.internals.ProducerInterceptors", "org.apache.kafka.common.utils.Time");
+
+            if (constructor == null) {
+                // Version 2.2.0+ is supported.
+                constructor = target.getConstructor("java.util.Map",
+                        "org.apache.kafka.common.serialization.Serializer", "org.apache.kafka.common.serialization.Serializer",
+                        "org.apache.kafka.clients.Metadata", "org.apache.kafka.clients.KafkaClient",
+                        "org.apache.kafka.clients.producer.internals.ProducerInterceptors", "org.apache.kafka.common.utils.Time");
+            }
 
             // Version 2.0.0+ is supported.
             if (constructor == null) {
@@ -98,12 +131,32 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
                         "org.apache.kafka.common.serialization.Serializer", "org.apache.kafka.common.serialization.Serializer",
                         "org.apache.kafka.clients.Metadata", "org.apache.kafka.clients.KafkaClient");
             }
-            constructor.addInterceptor(ProducerConstructorInterceptor.class);
+
+            if (constructor == null) {
+                constructor = target.getConstructor("org.apache.kafka.clients.producer.ProducerConfig",
+                        "org.apache.kafka.common.serialization.Serializer", "org.apache.kafka.common.serialization.Serializer");
+            }
+
+            if (constructor != null) {
+                constructor.addInterceptor(ProducerConstructorInterceptor.class);
+            }
 
             InstrumentMethod sendMethod = target.getDeclaredMethod("send", "org.apache.kafka.clients.producer.ProducerRecord", "org.apache.kafka.clients.producer.Callback");
-            sendMethod.addInterceptor(ProducerSendInterceptor.class);
+            if (sendMethod != null) {
+                sendMethod.addInterceptor(ProducerSendInterceptor.class);
+            }
+
+            // Version 0.11.0+ is supported.
+            InstrumentMethod setReadOnlyMethod = target.getDeclaredMethod("setReadOnly", "org.apache.kafka.common.header.Headers");
+            if (setReadOnlyMethod != null) {
+                setReadOnlyMethod.addInterceptor(ProducerAddHeaderInterceptor.class);
+            }
+            if (target.hasField("apiVersions")) {
+                target.addGetter(ApiVersionsGetter.class, "apiVersions");
+            }
 
             target.addField(RemoteAddressFieldAccessor.class);
+
             return target.toBytecode();
         }
 
@@ -143,15 +196,26 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
 
             InstrumentMethod constructor = target.getConstructor("org.apache.kafka.clients.consumer.ConsumerConfig",
                     "org.apache.kafka.common.serialization.Deserializer", "org.apache.kafka.common.serialization.Deserializer");
-            constructor.addInterceptor(ConsumerConstructorInterceptor.class);
+            if(constructor != null) {
+                constructor.addInterceptor(ConsumerConstructorInterceptor.class);
+            }
+
+            // Version 2.2.0+ is supported.
+            InstrumentMethod pollMethod = target.getDeclaredMethod("poll", "org.apache.kafka.common.utils.Timer", "boolean");
 
             // Version 2.0.0+ is supported.
-            InstrumentMethod pollMethod = target.getDeclaredMethod("poll", "long", "boolean");
+            if (pollMethod == null) {
+                pollMethod = target.getDeclaredMethod("poll", "long", "boolean");
+            }
 
+            // Version 2.0.0-
             if (pollMethod == null) {
                 pollMethod = target.getDeclaredMethod("poll", "long");
             }
-            pollMethod.addInterceptor(ConsumerPollInterceptor.class);
+
+            if (pollMethod != null) {
+                pollMethod.addInterceptor(ConsumerPollInterceptor.class);
+            }
 
             target.addField(RemoteAddressFieldAccessor.class);
 
@@ -166,6 +230,7 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
         public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
             final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
             target.addField(RemoteAddressFieldAccessor.class);
+            target.addField(EndPointFieldAccessor.class);
             return target.toBytecode();
         }
 
@@ -232,6 +297,7 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
 
     public static class EntryPointTransform implements TransformCallback {
         private final PLogger logger = PLoggerFactory.getLogger(this.getClass());
+
         @Override
         public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
             final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
@@ -285,6 +351,73 @@ public class KafkaPlugin implements ProfilerPlugin, TransformTemplateAware {
         return fullQualifiedMethodName.substring(0, classEndPosition);
     }
 
+    public static class KafkaSelectorTransform implements TransformCallback {
 
+        @Override
+        public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
+            final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
+
+            // for v1.0.0+
+            InstrumentMethod registerMethod = target.getDeclaredMethod("registerChannel", "java.lang.String", "java.nio.channels.SocketChannel", "int");
+            if (registerMethod == null) {
+                // for v1.0.0
+                registerMethod = target.getDeclaredMethod("buildChannel", "java.nio.channels.SocketChannel", "java.lang.String", "java.nio.channels.SelectionKey");
+            }
+
+            if (registerMethod != null) {
+                registerMethod.addInterceptor(SocketChannelRegisterInterceptor.class);
+
+                target.addField(SocketChannelListFieldAccessor.class);
+            }
+
+            return target.toBytecode();
+        }
+    }
+
+    public static class NetworkClientTransform implements TransformCallback {
+
+        @Override
+        public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
+            final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
+
+            InstrumentMethod pollMethod = target.getDeclaredMethod("poll", "long", "long");
+
+            if (pollMethod != null) {
+                pollMethod.addInterceptor(NetworkClientPollInterceptor.class);
+                target.addGetter(SelectorGetter.class, "selector");
+            }
+
+            return target.toBytecode();
+        }
+
+    }
+
+    public static class TopicPartitionTransform implements TransformCallback {
+
+        @Override
+        public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
+            final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
+
+            target.addField(EndPointFieldAccessor.class);
+
+            return target.toBytecode();
+        }
+
+    }
+
+    public static class ConsumerRecordsTransform implements TransformCallback {
+
+        @Override
+        public byte[] doInTransform(Instrumentor instrumentor, ClassLoader classLoader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
+            final InstrumentClass target = instrumentor.getInstrumentClass(classLoader, className, classfileBuffer);
+
+            InstrumentMethod constructor = target.getConstructor("java.util.Map");
+            if (constructor != null) {
+                constructor.addInterceptor(ConsumerRecordsInterceptor.class);
+            }
+            return target.toBytecode();
+        }
+
+    }
 
 }

@@ -36,14 +36,8 @@ public class ResponseTime {
 
 
     public ResponseTime(String applicationName, ServiceType applicationServiceType, long timeStamp) {
-        if (applicationName == null) {
-            throw new NullPointerException("applicationName must not be null");
-        }
-        if (applicationServiceType == null) {
-            throw new NullPointerException("applicationServiceType must not be null");
-        }
-        this.applicationName = applicationName;
-        this.applicationServiceType = applicationServiceType;
+        this.applicationName = Objects.requireNonNull(applicationName, "applicationName");
+        this.applicationServiceType = Objects.requireNonNull(applicationServiceType, "applicationServiceType");
         this.timeStamp = timeStamp;
     }
 
@@ -61,16 +55,14 @@ public class ResponseTime {
     }
 
     public Histogram findHistogram(String agentId) {
-        if (agentId == null) {
-            throw new NullPointerException("agentId must not be null");
-        }
+        Objects.requireNonNull(agentId, "agentId");
+
         return responseHistogramMap.get(agentId);
     }
 
     private Histogram getHistogram(String agentId) {
-        if (agentId == null) {
-            throw new NullPointerException("agentId must not be null");
-        }
+        Objects.requireNonNull(agentId, "agentId");
+
         TimeHistogram histogram = responseHistogramMap.computeIfAbsent(agentId, k -> new TimeHistogram(applicationServiceType, timeStamp));
         return histogram;
     }
@@ -82,9 +74,8 @@ public class ResponseTime {
 
 
     public void addResponseTime(String agentId, Histogram copyHistogram) {
-        if (copyHistogram == null) {
-            throw new NullPointerException("copyHistogram must not be null");
-        }
+        Objects.requireNonNull(copyHistogram, "copyHistogram");
+        
         Histogram histogram = getHistogram(agentId);
         histogram.add(copyHistogram);
     }

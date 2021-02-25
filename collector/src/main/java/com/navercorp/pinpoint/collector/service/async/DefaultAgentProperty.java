@@ -16,22 +16,36 @@
 
 package com.navercorp.pinpoint.collector.service.async;
 
-import com.navercorp.pinpoint.common.util.Assert;
-
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Woonduk Kang(emeroad)
+ * @author jaehong.kim
  */
 public class DefaultAgentProperty implements AgentProperty {
+    private final String applicationName;
     private final String agentId;
     private final long agentStartTime;
     private final Map<String, Object> properties;
+    private final short serviceType;
 
-    public DefaultAgentProperty(String agentId, long agentStartTime, Map<String, Object> properties) {
-        this.agentId = Assert.requireNonNull(agentId, "agentId must not be null");
+    public DefaultAgentProperty(String applicationName, short serviceType, String agentId, long agentStartTime, Map<String, Object> properties) {
+        this.applicationName = Objects.requireNonNull(applicationName, "applicationName");
+        this.serviceType = serviceType;
+        this.agentId = Objects.requireNonNull(agentId, "agentId");
         this.agentStartTime = agentStartTime;
-        this.properties = Assert.requireNonNull(properties, "properties must not be null");
+        this.properties = Objects.requireNonNull(properties, "properties");
+    }
+
+    @Override
+    public String getApplicationName() {
+        return applicationName;
+    }
+
+    @Override
+    public short getServiceType() {
+        return serviceType;
     }
 
     @Override
@@ -51,10 +65,13 @@ public class DefaultAgentProperty implements AgentProperty {
 
     @Override
     public String toString() {
-        return "DefaultAgentProperty{" +
-                "agentId='" + agentId + '\'' +
-                ", agentStartTime=" + agentStartTime +
-                ", properties=" + properties +
-                '}';
+        final StringBuilder sb = new StringBuilder("DefaultAgentProperty{");
+        sb.append("applicationName='").append(applicationName).append('\'');
+        sb.append(", agentId='").append(agentId).append('\'');
+        sb.append(", agentStartTime=").append(agentStartTime);
+        sb.append(", properties=").append(properties);
+        sb.append(", serviceType=").append(serviceType);
+        sb.append('}');
+        return sb.toString();
     }
 }

@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Woonduk Kang(emeroad)
@@ -44,14 +45,8 @@ public class ApplicationServerTypeProvider implements Provider<ServiceType> {
 
     @Inject
     public ApplicationServerTypeProvider(ProfilerConfig profilerConfig, @ConfiguredApplicationType ServiceType configuredApplicationType, Provider<PluginContextLoadResult> pluginContextLoadResultProvider) {
-        if (profilerConfig == null) {
-            throw new NullPointerException("profilerConfig must not be null");
-        }
-        if (configuredApplicationType == null) {
-            throw new NullPointerException("configuredApplicationType must not be null");
-        }
-        this.profilerConfig = profilerConfig;
-        this.configuredApplicationType = configuredApplicationType;
+        this.profilerConfig = Objects.requireNonNull(profilerConfig, "profilerConfig");
+        this.configuredApplicationType = Objects.requireNonNull(configuredApplicationType, "configuredApplicationType");
         this.pluginContextLoadResultProvider = pluginContextLoadResultProvider;
     }
 

@@ -37,10 +37,10 @@ public class DispatchHandlerHandleMethodInterceptor extends SpanEventSimpleAroun
     protected void doInBeforeTrace(SpanEventRecorder recorder, Object target, Object[] args) {
         if (isAsync(args)) {
             // make asynchronous trace-id
-            final AsyncContext asyncContext = recorder.recordNextAsyncContext(true);
+            final AsyncContext asyncContext = recorder.recordNextAsyncContext();
             ((AsyncContextAccessor) args[0])._$PINPOINT$_setAsyncContext(asyncContext);
             if (isDebug) {
-                logger.debug("Set closeable-AsyncContext {}", asyncContext);
+                logger.debug("Set AsyncContext {}", asyncContext);
             }
         }
     }

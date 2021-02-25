@@ -16,6 +16,7 @@
 
 package com.navercorp.pinpoint.profiler.monitor.collector.deadlock;
 
+import java.util.Objects;
 import com.navercorp.pinpoint.common.util.CollectionUtils;
 import com.navercorp.pinpoint.profiler.monitor.collector.AgentStatMetricCollector;
 import com.navercorp.pinpoint.profiler.monitor.metric.deadlock.DeadlockMetric;
@@ -36,10 +37,7 @@ public class DefaultDeadlockMetricCollector implements AgentStatMetricCollector<
     private final DeadlockMetric deadlockMetric;
 
     public DefaultDeadlockMetricCollector(DeadlockMetric deadlockMetric) {
-        if (deadlockMetric == null) {
-            throw new NullPointerException("deadlockMetric must not be null");
-        }
-        this.deadlockMetric = deadlockMetric;
+        this.deadlockMetric = Objects.requireNonNull(deadlockMetric, "deadlockMetric");
     }
 
     @Override

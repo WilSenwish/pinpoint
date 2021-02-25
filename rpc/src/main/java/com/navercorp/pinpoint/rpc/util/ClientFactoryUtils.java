@@ -1,11 +1,11 @@
 /*
- * Copyright 2017 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,15 +16,15 @@
 
 package com.navercorp.pinpoint.rpc.util;
 
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 import com.navercorp.pinpoint.rpc.PinpointSocketException;
 import com.navercorp.pinpoint.rpc.client.PinpointClient;
 import com.navercorp.pinpoint.rpc.client.PinpointClientFactory;
+import com.navercorp.pinpoint.rpc.client.SocketAddressProvider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 
 /**
  * @author Taejin Koo
@@ -50,9 +50,9 @@ public final class ClientFactoryUtils {
         private final int port;
 
         public DnsPinpointClientProvider(String host, int port, PinpointClientFactory clientFactory) {
-            this.host = Assert.requireNonNull(host, "host must not be null");
+            this.host = Objects.requireNonNull(host, "host");
             this.port = port;
-            this.clientFactory = Assert.requireNonNull(clientFactory, "clientFactory must not be null");
+            this.clientFactory = Objects.requireNonNull(clientFactory, "clientFactory");
         }
 
         @Override
@@ -84,54 +84,20 @@ public final class ClientFactoryUtils {
         return pinpointClient;
     }
 
-    @Deprecated
-    public static PinpointClientProvider newPinpointClientProvider(InetSocketAddress inetSocketAddress, PinpointClientFactory clientFactory) {
-        return new StaticPinpointClientProvider(inetSocketAddress, clientFactory);
-    }
-
-    @Deprecated
-    private static class StaticPinpointClientProvider implements PinpointClientProvider {
-        private final InetSocketAddress inetSocketAddress;
-        private final PinpointClientFactory clientFactory;
-
-        public StaticPinpointClientProvider(InetSocketAddress inetSocketAddress, PinpointClientFactory clientFactory) {
-            this.inetSocketAddress = Assert.requireNonNull(inetSocketAddress, "host must not be null");
-            this.clientFactory = Assert.requireNonNull(clientFactory, "clientFactory must not be null");
-        }
-
-        @Override
-        public String getAddressAsString() {
-            InetAddress address = inetSocketAddress.getAddress();
-            if (address != null) {
-                return address.getHostAddress() + ":" + inetSocketAddress.getPort();
-            } else {
-                return "unknown:-1";
-            }
-        }
-
-        @Override
-        public PinpointClient get() {
-            return createPinpointClient(inetSocketAddress, clientFactory);
-        }
-    }
-
-    /**
-     * @deprecated Since 1.7.2 Use {@link #createPinpointClient(String, int, PinpointClientFactory)}
-     */
-    @Deprecated
-    public static PinpointClient createPinpointClient(InetSocketAddress connectAddress, PinpointClientFactory clientFactory) {
+    public static PinpointClient createPinpointClient(SocketAddressProvider addressProvider, PinpointClientFactory clientFactory) {
         PinpointClient pinpointClient = null;
         for (int i = 0; i < 3; i++) {
             try {
-                pinpointClient = clientFactory.connect(connectAddress);
-                LOGGER.info("tcp connect success. remote:{}", connectAddress);
+                pinpointClient = clientFactory.connect(addressProvider);
+
+                LOGGER.info("tcp connect success. remote:{}", pinpointClient.getRemoteAddress());
                 return pinpointClient;
             } catch (PinpointSocketException e) {
-                LOGGER.warn("tcp connect fail. remote:{} try reconnect, retryCount:{}", connectAddress, i);
+                LOGGER.warn("tcp connect fail. remote:{} try reconnect, retryCount:{}", addressProvider, i);
             }
         }
-        LOGGER.warn("change background tcp connect mode remote:{} ", connectAddress);
-        pinpointClient = clientFactory.scheduledConnect(connectAddress);
+        LOGGER.warn("change background tcp connect mode remote:{} ", addressProvider);
+        pinpointClient = clientFactory.scheduledConnect(addressProvider);
 
         return pinpointClient;
     }

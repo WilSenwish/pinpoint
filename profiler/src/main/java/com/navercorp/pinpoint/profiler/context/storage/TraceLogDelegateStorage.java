@@ -16,6 +16,7 @@
 
 package com.navercorp.pinpoint.profiler.context.storage;
 
+import java.util.Objects;
 import com.navercorp.pinpoint.profiler.context.DefaultTrace;
 import com.navercorp.pinpoint.profiler.context.Span;
 import com.navercorp.pinpoint.profiler.context.SpanEvent;
@@ -32,10 +33,7 @@ public class TraceLogDelegateStorage implements Storage {
     private final Storage delegate;
 
     public TraceLogDelegateStorage(Storage delegate) {
-        if (delegate == null) {
-            throw new NullPointerException("delegate must not be null");
-        }
-        this.delegate = delegate;
+        this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
     @Override

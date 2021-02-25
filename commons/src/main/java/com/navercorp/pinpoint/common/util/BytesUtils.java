@@ -17,10 +17,9 @@
 package com.navercorp.pinpoint.common.util;
 
 
-import com.navercorp.pinpoint.common.Charsets;
-
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author emeroad
@@ -36,15 +35,15 @@ public final class BytesUtils {
 
     private static final byte[] EMPTY_BYTES = new byte[0];
 
-    private static final Charset UTF8_CHARSET = Charsets.UTF_8;
-    private static final String UTF8 = Charsets.UTF_8_NAME;
+    private static final Charset UTF8_CHARSET = StandardCharsets.UTF_8;
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private BytesUtils() {
     }
 
     public static byte[] stringLongLongToBytes(final String string, final int maxStringSize, final long value1, final long value2) {
         if (string == null) {
-            throw new NullPointerException("string must not be null");
+            throw new NullPointerException("string");
         }
         if (maxStringSize < 0) {
             throw new IndexOutOfBoundsException("maxStringSize");
@@ -62,17 +61,17 @@ public final class BytesUtils {
 
     public static int writeBytes(final byte[] buffer, int bufferOffset, final byte[] srcBytes) {
         if (srcBytes == null) {
-            throw new NullPointerException("srcBytes must not be null");
+            throw new NullPointerException("srcBytes");
         }
         return writeBytes(buffer, bufferOffset, srcBytes, 0, srcBytes.length);
     }
 
     public static int writeBytes(final byte[] buffer, final int bufferOffset, final byte[] srcBytes, final int srcOffset, final int srcLength) {
         if (buffer == null) {
-            throw new NullPointerException("buffer must not be null");
+            throw new NullPointerException("buffer");
         }
         if (srcBytes == null) {
-            throw new NullPointerException("stringBytes must not be null");
+            throw new NullPointerException("stringBytes");
         }
         if (bufferOffset < 0) {
             throw new IndexOutOfBoundsException("negative bufferOffset:" + bufferOffset);
@@ -86,7 +85,7 @@ public final class BytesUtils {
 
     public static long bytesToLong(final byte[] buf, final int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         if (offset < 0) {
             throw new IndexOutOfBoundsException("negative offset:" + offset);
@@ -108,7 +107,7 @@ public final class BytesUtils {
 
     public static int bytesToInt(final byte[] buf, final int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         if (offset < 0) {
             throw new IndexOutOfBoundsException("negative offset:" + offset);
@@ -127,7 +126,7 @@ public final class BytesUtils {
 
     public static short bytesToShort(final byte[] buf, final int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         if (offset < 0) {
             throw new IndexOutOfBoundsException("negative offset:" + offset);
@@ -148,7 +147,7 @@ public final class BytesUtils {
 
     public static int bytesToVar32(final byte[] buffer, final int offset) {
         if (buffer == null) {
-            throw new NullPointerException("buffer must not be null");
+            throw new NullPointerException("buffer");
         }
         checkBound(buffer.length, offset);
 
@@ -200,7 +199,7 @@ public final class BytesUtils {
 
     public static long bytesToVar64(final byte[] buffer, final int offset) {
         if (buffer == null) {
-            throw new NullPointerException("buffer must not be null");
+            throw new NullPointerException("buffer");
         }
         checkBound(buffer.length, offset);
         // borrowing the protocol buffer's concept of variable-length encoding
@@ -283,7 +282,7 @@ public final class BytesUtils {
 
     public static int writeLong(final long value, final byte[] buf, int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         if (offset < 0) {
             throw new IndexOutOfBoundsException("negative offset:" + offset);
@@ -305,7 +304,7 @@ public final class BytesUtils {
 
     public static int writeShort(final short value, final byte[] buf, int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         if (offset < 0) {
             throw new IndexOutOfBoundsException("negative offset:" + offset);
@@ -320,7 +319,7 @@ public final class BytesUtils {
 
     public static int writeInt(final int value, final byte[] buf, int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         if (offset < 0) {
             throw new IndexOutOfBoundsException("negative offset:" + offset);
@@ -341,7 +340,7 @@ public final class BytesUtils {
 
     public static int writeVar32(int value, final byte[] buf, int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         checkBound(buf.length, offset);
         while (true) {
@@ -393,7 +392,7 @@ public final class BytesUtils {
      */
     public static int writeVar64(long value, final byte[] buf, int offset) {
         if (buf == null) {
-            throw new NullPointerException("buf must not be null");
+            throw new NullPointerException("buf");
         }
         checkBound(buf.length, offset);
 
@@ -473,7 +472,7 @@ public final class BytesUtils {
 
     public static byte[] add(final String prefix, final long postfix) {
         if (prefix == null) {
-            throw new NullPointerException("prefix must not be null");
+            throw new NullPointerException("prefix");
         }
         byte[] agentByte = toBytes(prefix);
         return add(agentByte, postfix);
@@ -488,7 +487,7 @@ public final class BytesUtils {
 
     public static byte[] add(final byte[] preFix, final short postfix) {
         if (preFix == null) {
-            throw new NullPointerException("preFix must not be null");
+            throw new NullPointerException("preFix");
         }
         byte[] buf = new byte[preFix.length + SHORT_BYTE_LENGTH];
         System.arraycopy(preFix, 0, buf, 0, preFix.length);
@@ -498,7 +497,7 @@ public final class BytesUtils {
     
     public static byte[] add(final byte[] preFix, final int postfix) {
         if (preFix == null) {
-            throw new NullPointerException("preFix must not be null");
+            throw new NullPointerException("preFix");
         }
         byte[] buf = new byte[preFix.length + INT_BYTE_LENGTH];
         System.arraycopy(preFix, 0, buf, 0, preFix.length);
@@ -521,38 +520,24 @@ public final class BytesUtils {
         return buf;
     }
 
-    @Deprecated
-    public static byte[] add(final long preFix, final short postFix, final int intArg, final short shortArg) {
-        byte[] buf = new byte[LONG_BYTE_LENGTH + SHORT_BYTE_LENGTH + INT_BYTE_LENGTH + SHORT_BYTE_LENGTH];
-        int offset = 0;
-        writeLong(preFix, buf, offset);
-        offset += LONG_BYTE_LENGTH;
-        writeShort(postFix, buf, offset);
-        offset += SHORT_BYTE_LENGTH;
-        writeInt(intArg, buf, offset);
-        offset += INT_BYTE_LENGTH;
-        writeShort(shortArg, buf, offset);
-        return buf;
-    }
-
 
     public static byte[] toBytes(final String value) {
         if (value == null) {
             return null;
         }
         try {
-            return value.getBytes(Charsets.UTF_8_NAME);
+            return value.getBytes(UTF8);
         } catch (UnsupportedEncodingException e) {
-            return value.getBytes(Charsets.UTF_8);
+            return value.getBytes(UTF8_CHARSET);
         }
     }
 
     public static byte[] merge(final byte[] b1, final byte[] b2) {
         if (b1 == null) {
-            throw new NullPointerException("b1 must not be null");
+            throw new NullPointerException("b1");
         }
         if (b2 == null) {
-            throw new NullPointerException("b2 must not be null");
+            throw new NullPointerException("b2");
         }
         final byte[] result = new byte[b1.length + b2.length];
 

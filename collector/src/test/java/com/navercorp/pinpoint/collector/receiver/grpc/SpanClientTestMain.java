@@ -17,17 +17,27 @@
 package com.navercorp.pinpoint.collector.receiver.grpc;
 
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SpanClientTestMain {
-    private static final int MAX = 100000;
+    public static final Logger logger = Logger.getLogger(SpanClientTestMain.class.getName());
+    static {
+        logger.setLevel(Level.FINE);
+    }
+    private static final int MAX = Integer.MAX_VALUE;
 
     public static void main(String[] args) throws Exception {
-        SpanClientMock clientMock = new SpanClientMock("localhost", 9998);
-        TimeUnit.SECONDS.sleep(10);
+        logger.info("START");
 
-        clientMock.span(9999999);
+        SpanClientMock clientMock = new SpanClientMock("localhost", 9993);
+        TimeUnit.SECONDS.sleep(3);
 
-        TimeUnit.SECONDS.sleep(60);
-        clientMock.stop();
+        long startTime = System.currentTimeMillis();
+        clientMock.span(MAX);
+
+        TimeUnit.SECONDS.sleep(999999999);
+
+//        clientMock.stop();
     }
 }

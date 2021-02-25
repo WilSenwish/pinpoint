@@ -16,7 +16,7 @@
 
 package com.navercorp.pinpoint.rpc.client;
 
-import com.navercorp.pinpoint.common.util.Assert;
+import java.util.Objects;
 import com.navercorp.pinpoint.rpc.MessageListener;
 import com.navercorp.pinpoint.rpc.StateChangeEventListener;
 import com.navercorp.pinpoint.rpc.cluster.ClusterOption;
@@ -45,13 +45,13 @@ public class DefaultPinpointClientHandlerFactory implements ClientHandlerFactory
                                                ServerStreamChannelMessageHandler serverStreamChannelMessageHandler,
                                                List<StateChangeEventListener> stateChangeEventListeners) {
 
-        this.clientOption = Assert.requireNonNull(clientOption, "clientOption must not be null");
-        this.clusterOption = Assert.requireNonNull(clusterOption, "clusterOption must not be null");
-        this.handshakerFactory = Assert.requireNonNull(handshakerFactory, "handshakerFactory must not be null");
+        this.clientOption = Objects.requireNonNull(clientOption, "clientOption");
+        this.clusterOption = Objects.requireNonNull(clusterOption, "clusterOption");
+        this.handshakerFactory = Objects.requireNonNull(handshakerFactory, "handshakerFactory");
 
-        this.messageListener = Assert.requireNonNull(messageListener, "messageListener must not be null");
-        this.serverStreamChannelMessageHandler = Assert.requireNonNull(serverStreamChannelMessageHandler, "serverStreamChannelMessageHandler must not be null");
-        this.stateChangeEventListeners = Assert.requireNonNull(stateChangeEventListeners, "stateChangeEventListeners must not be null");
+        this.messageListener = Objects.requireNonNull(messageListener, "messageListener");
+        this.serverStreamChannelMessageHandler = Objects.requireNonNull(serverStreamChannelMessageHandler, "serverStreamChannelMessageHandler");
+        this.stateChangeEventListeners = Objects.requireNonNull(stateChangeEventListeners, "stateChangeEventListeners");
     }
 
     @Override

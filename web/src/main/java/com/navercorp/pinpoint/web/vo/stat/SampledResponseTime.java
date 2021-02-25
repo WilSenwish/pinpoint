@@ -17,6 +17,7 @@
 package com.navercorp.pinpoint.web.vo.stat;
 
 import com.navercorp.pinpoint.web.vo.chart.Point;
+import com.navercorp.pinpoint.web.vo.chart.UncollectedPointCreatorFactory;
 import com.navercorp.pinpoint.web.vo.stat.chart.agent.AgentStatPoint;
 
 import java.util.Objects;
@@ -27,19 +28,14 @@ import java.util.Objects;
 public class SampledResponseTime implements SampledAgentStatDataPoint {
 
     public static final long UNCOLLECTED_RESPONSE_TIME = -1L;
-    public static final Point.UncollectedPointCreator<AgentStatPoint<Long>> UNCOLLECTED_POINT_CREATOR = new Point.UncollectedPointCreator<AgentStatPoint<Long>>() {
-        @Override
-        public AgentStatPoint<Long> createUnCollectedPoint(long xVal) {
-            return new AgentStatPoint<>(xVal, UNCOLLECTED_RESPONSE_TIME);
-        }
-    };
+    public static final Point.UncollectedPointCreator<AgentStatPoint<Long>> UNCOLLECTED_POINT_CREATOR = UncollectedPointCreatorFactory.createLongPointCreator(UNCOLLECTED_RESPONSE_TIME);
 
     private final AgentStatPoint<Long> avg;
     private final AgentStatPoint<Long> max;
 
     public SampledResponseTime(AgentStatPoint<Long> avg, AgentStatPoint<Long> max) {
-        this.avg = Objects.requireNonNull(avg, "avg must not be null");
-        this.max = Objects.requireNonNull(max, "max must not be null");
+        this.avg = Objects.requireNonNull(avg, "avg");
+        this.max = Objects.requireNonNull(max, "max");
     }
 
     public AgentStatPoint<Long> getAvg() {

@@ -88,27 +88,18 @@ public class ApplicationAgentsList {
         String value();
     }
 
-    public interface Filter {
-
-        boolean ACCEPT = true;
-        boolean REJECT = false;
-
-        boolean filter(AgentInfo agentInfo);
-
-        Filter NONE = agentInfo -> ACCEPT;
-    }
 
     private final GroupBy groupBy;
-    private final Filter filter;
+    private final AgentInfoFilter filter;
     private final SortedMap<GroupingKey, List<AgentInfo>> agentsMap = new TreeMap<>();
 
-    public ApplicationAgentsList(GroupBy groupBy, Filter filter) {
-        this.groupBy = Objects.requireNonNull(groupBy, "groupBy must not be null");
-        this.filter = Objects.requireNonNull(filter, "filter must not be null");
+    public ApplicationAgentsList(GroupBy groupBy, AgentInfoFilter filter) {
+        this.groupBy = Objects.requireNonNull(groupBy, "groupBy");
+        this.filter = Objects.requireNonNull(filter, "filter");
     }
 
     public void add(AgentInfo agentInfo) {
-        if (filter.filter(agentInfo) == Filter.REJECT) {
+        if (filter.filter(agentInfo) == AgentInfoFilter.REJECT) {
             return;
         }
         GroupingKey key = groupBy.extractKey(agentInfo);
@@ -157,7 +148,7 @@ public class ApplicationAgentsList {
         private final String keyValue;
 
         private StringGroupingKey(String keyValue) {
-            this.keyValue = Objects.requireNonNull(keyValue, "keyValue must not be null");
+            this.keyValue = Objects.requireNonNull(keyValue, "keyValue");
         }
 
         @Override
@@ -185,7 +176,7 @@ public class ApplicationAgentsList {
         private final boolean isContainer;
 
         private HostNameContainerGroupingKey(String hostName, boolean isContainer) {
-            String keyValue = Objects.requireNonNull(hostName, "hostName must not be null");
+            String keyValue = Objects.requireNonNull(hostName, "hostName");
             if (isContainer) {
                 keyValue = CONTAINER;
             }

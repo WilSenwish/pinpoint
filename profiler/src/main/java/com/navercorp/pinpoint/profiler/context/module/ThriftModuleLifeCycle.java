@@ -20,7 +20,6 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.navercorp.pinpoint.bootstrap.logging.PLogger;
 import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.profiler.receiver.CommandDispatcher;
 import com.navercorp.pinpoint.profiler.sender.DataSender;
 import com.navercorp.pinpoint.profiler.sender.EnhancedDataSender;
@@ -29,6 +28,7 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.util.Timeout;
 import org.jboss.netty.util.Timer;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -70,26 +70,26 @@ public class ThriftModuleLifeCycle implements ModuleLifeCycle {
             Provider<CommandDispatcher> commandDispatcherProvider,
             @DefaultClientFactory Provider<PinpointClientFactory> clientFactoryProvider,
             @AgentDataSender Provider<EnhancedDataSender<Object>> tcpDataSenderProvider,
-            @SpanStatConnectTimer Provider<Timer> spanStatConnectTimerProvider,
+            @SpanStatChannelFactory Provider<Timer> spanStatConnectTimerProvider,
             @SpanStatChannelFactory Provider<ChannelFactory> spanStatChannelFactoryProvider,
-            @SpanClientFactory Provider<PinpointClientFactory> spanClientFactoryProvider,
-            @StatClientFactory Provider<PinpointClientFactory> statClientFactoryProvider,
+            @SpanDataSender Provider<PinpointClientFactory> spanClientFactoryProvider,
+            @StatDataSender Provider<PinpointClientFactory> statClientFactoryProvider,
             @SpanDataSender Provider<DataSender> spanDataSenderProvider,
             @StatDataSender Provider<DataSender> statDataSenderProvider
             ) {
-        this.commandDispatcherProvider = Assert.requireNonNull(commandDispatcherProvider, "commandDispatcherProvider must not be null");
-        this.clientFactoryProvider = Assert.requireNonNull(clientFactoryProvider, "clientFactoryProvider must not be null");
-        this.tcpDataSenderProvider = Assert.requireNonNull(tcpDataSenderProvider, "tcpDataSenderProvider must not be null");
+        this.commandDispatcherProvider = Objects.requireNonNull(commandDispatcherProvider, "commandDispatcherProvider");
+        this.clientFactoryProvider = Objects.requireNonNull(clientFactoryProvider, "clientFactoryProvider");
+        this.tcpDataSenderProvider = Objects.requireNonNull(tcpDataSenderProvider, "tcpDataSenderProvider");
 
-        this.spanStatConnectTimerProvider = Assert.requireNonNull(spanStatConnectTimerProvider, "spanStatConnectTimerProvider must not be null");
+        this.spanStatConnectTimerProvider = Objects.requireNonNull(spanStatConnectTimerProvider, "spanStatConnectTimerProvider");
 
-        this.spanStatChannelFactoryProvider = Assert.requireNonNull(spanStatChannelFactoryProvider, "spanStatChannelFactoryProvider must not be null");
+        this.spanStatChannelFactoryProvider = Objects.requireNonNull(spanStatChannelFactoryProvider, "spanStatChannelFactoryProvider");
 
-        this.spanClientFactoryProvider = Assert.requireNonNull(spanClientFactoryProvider, "spanClientFactoryProvider must not be null");
-        this.statClientFactoryProvider = Assert.requireNonNull(statClientFactoryProvider, "statClientFactoryProvider must not be null");
+        this.spanClientFactoryProvider = Objects.requireNonNull(spanClientFactoryProvider, "spanClientFactoryProvider");
+        this.statClientFactoryProvider = Objects.requireNonNull(statClientFactoryProvider, "statClientFactoryProvider");
 
-        this.spanDataSenderProvider = Assert.requireNonNull(spanDataSenderProvider, "spanDataSenderProvider must not be null");
-        this.statDataSenderProvider = Assert.requireNonNull(statDataSenderProvider, "statDataSenderProvider must not be null");
+        this.spanDataSenderProvider = Objects.requireNonNull(spanDataSenderProvider, "spanDataSenderProvider");
+        this.statDataSenderProvider = Objects.requireNonNull(statDataSenderProvider, "statDataSenderProvider");
     }
 
     @Override

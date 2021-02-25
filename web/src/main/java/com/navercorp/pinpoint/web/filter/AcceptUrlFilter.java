@@ -36,10 +36,8 @@ public class AcceptUrlFilter implements URLPatternFilter {
     private final String urlPattern;
     private final AntPathMatcher matcher = new AntPathMatcher();
 
-
-
     public AcceptUrlFilter(String urlPattern) {
-        this.urlPattern = Objects.requireNonNull(urlPattern, "urlPattern must not be null");
+        this.urlPattern = Objects.requireNonNull(urlPattern, "urlPattern");
     }
 
     @Override

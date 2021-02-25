@@ -16,18 +16,25 @@
 
 package com.navercorp.pinpoint.collector.service.async;
 
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.rpc.server.ChannelProperties;
+
+import java.util.Objects;
 
 /**
  * @author Woonduk Kang(emeroad)
+ * @author jaehong.kim
  */
 public class AgentPropertyChannelAdaptor implements AgentProperty {
 
     private final ChannelProperties channelProperties;
 
     public AgentPropertyChannelAdaptor(ChannelProperties channelProperties) {
-        this.channelProperties = Assert.requireNonNull(channelProperties, "channelProperties must not be null");
+        this.channelProperties = Objects.requireNonNull(channelProperties, "channelProperties");
+    }
+
+    @Override
+    public String getApplicationName() {
+        return channelProperties.getApplicationName();
     }
 
     @Override
@@ -46,9 +53,15 @@ public class AgentPropertyChannelAdaptor implements AgentProperty {
     }
 
     @Override
+    public short getServiceType() {
+        return (short) channelProperties.getServiceType();
+    }
+
+    @Override
     public String toString() {
-        return "AgentPropertyChannelAdaptor{" +
-                "channelProperties=" + channelProperties +
-                '}';
+        final StringBuilder sb = new StringBuilder("AgentPropertyChannelAdaptor{");
+        sb.append("channelProperties=").append(channelProperties);
+        sb.append('}');
+        return sb.toString();
     }
 }

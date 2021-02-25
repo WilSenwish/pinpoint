@@ -18,6 +18,8 @@ package com.navercorp.pinpoint.profiler.context.id;
 
 import com.google.inject.Inject;
 
+import java.util.Objects;
+
 /**
  * @author HyunGil Jeong
  */
@@ -27,10 +29,7 @@ public class DefaultTransactionCounter implements TransactionCounter {
 
     @Inject
     public DefaultTransactionCounter(IdGenerator idGenerator) {
-        if (idGenerator == null) {
-            throw new NullPointerException("idGenerator");
-        }
-        this.idGenerator = idGenerator;
+        this.idGenerator = Objects.requireNonNull(idGenerator, "idGenerator");
     }
     
     @Override

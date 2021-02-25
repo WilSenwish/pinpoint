@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 NAVER Corp.
+ * Copyright 2019 NAVER Corp.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,11 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.navercorp.pinpoint.bootstrap.AgentOption;
+import com.navercorp.pinpoint.bootstrap.config.InstrumentMatcherCacheConfig;
 import com.navercorp.pinpoint.bootstrap.config.ProfilerConfig;
+import com.navercorp.pinpoint.bootstrap.config.TransportModule;
+import com.navercorp.pinpoint.bootstrap.config.util.ValueAnnotationProcessor;
 import com.navercorp.pinpoint.common.trace.ServiceType;
-import com.navercorp.pinpoint.common.util.Assert;
 import com.navercorp.pinpoint.profiler.context.TraceDataFormatVersion;
 import com.navercorp.pinpoint.profiler.context.module.AgentId;
 import com.navercorp.pinpoint.profiler.context.module.AgentStartTime;
@@ -38,15 +40,17 @@ import com.navercorp.pinpoint.profiler.context.provider.AgentStartTimeProvider;
 import com.navercorp.pinpoint.profiler.context.provider.ConfiguredApplicationTypeProvider;
 import com.navercorp.pinpoint.profiler.context.provider.InterceptorRegistryBinderProvider;
 import com.navercorp.pinpoint.profiler.context.provider.TraceDataFormatVersionProvider;
-import com.navercorp.pinpoint.profiler.instrument.classloading.BootstrapCore;
-import com.navercorp.pinpoint.profiler.plugin.PluginJar;
 import com.navercorp.pinpoint.profiler.context.provider.plugin.PluginJarsProvider;
+import com.navercorp.pinpoint.profiler.instrument.classloading.BootstrapCore;
 import com.navercorp.pinpoint.profiler.interceptor.registry.InterceptorRegistryBinder;
+import com.navercorp.pinpoint.profiler.plugin.PluginJar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.instrument.Instrumentation;
 import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
 
 /**
  * @author Woonduk Kang(emeroad)
@@ -57,19 +61,24 @@ public class ConfigModule extends AbstractModule {
     private final AgentOption agentOption;
 
     public ConfigModule(AgentOption agentOption) {
-        this.agentOption = Assert.requireNonNull(agentOption, "profilerConfig must not be null");
-        Assert.requireNonNull(agentOption.getProfilerConfig(), "profilerConfig must not be null");
+        this.agentOption = Objects.requireNonNull(agentOption, "profilerConfig");
+        Objects.requireNonNull(agentOption.getProfilerConfig(), "profilerConfig");
     }
 
     @Override
     protected void configure() {
+        logger.info("configure {}", this.getClass().getSimpleName());
         binder().requireExplicitBindings();
         binder().requireAtInjectOnConstructors();
         binder().disableCircularProxies();
 
         ProfilerConfig profilerConfig = agentOption.getProfilerConfig();
-
         bind(ProfilerConfig.class).toInstance(profilerConfig);
+
+        InstrumentMatcherCacheConfig instrumentMatcherCacheConfig = loadInstrumentMatcherCacheConfig(profilerConfig);
+        bind(InstrumentMatcherCacheConfig.class).toInstance(instrumentMatcherCacheConfig);
+
+        bind(TransportModule.class).toInstance(profilerConfig.getTransportModule());
 
         bindConstants(profilerConfig);
 
@@ -119,5 +128,17 @@ public class ConfigModule extends AbstractModule {
         bind(Boolean.class).annotatedWith(Container.class).toInstance(isContainer);
         bind(Long.class).annotatedWith(AgentStartTime.class).toProvider(AgentStartTimeProvider.class).in(Scopes.SINGLETON);
         bind(ServiceType.class).annotatedWith(ConfiguredApplicationType.class).toProvider(ConfiguredApplicationTypeProvider.class).in(Scopes.SINGLETON);
+    }
+
+
+    private InstrumentMatcherCacheConfig loadInstrumentMatcherCacheConfig(ProfilerConfig config) {
+        InstrumentMatcherCacheConfig instrumentMatcherCacheConfig = new InstrumentMatcherCacheConfig();
+
+        Properties properties = config.getProperties();
+        ValueAnnotationProcessor instrumentProcessor = new ValueAnnotationProcessor();
+        instrumentProcessor.process(instrumentProcessor, properties);
+
+        logger.info("{}", instrumentMatcherCacheConfig);
+        return instrumentMatcherCacheConfig;
     }
 }
